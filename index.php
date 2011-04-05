@@ -43,13 +43,8 @@ $server_key = "/etc/apache2/keys/ssl-cert-rena.key";
 // initialize authention
 $auth = new WebIDauth($client_cert, $issuer, $tmpDir, $server_key);
 
-if ($auth == false) {
-    echo $auth->getErr();
-} else {
-    if ($auth->processReq()) {
-        $auth->redirect();
-    } else {
-        echo $auth->getErr();
-    }
+if ($auth) {
+    $auth->processReq();
+    $auth->redirect();
 }
 ?>
