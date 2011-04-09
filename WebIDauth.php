@@ -4,6 +4,8 @@
 // Filename   : WebIDauth.php
 // Date       : 5th Apr 2011
 //
+// Version 0.1
+// 
 // Copyright 2011 fcns.eu
 // Author: Andrei Sambra - andrei@fcns.eu
 //
