@@ -48,6 +48,9 @@ if ($_GET['display']) {
     fclose($handle);
     unlink($tmpfile);
 
+    // print the certificate in it's raw format
+    echo "<pre>" . $client_cert . "</pre><br/><br/>\n";
+
     // get the modulus from the browser certificate (ugly hack)
     $tmpCRTname = $tmpDir . "/INFO" . md5(time().rand());
     // write the certificate into the temporary file
