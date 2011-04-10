@@ -28,23 +28,53 @@ require_once('WebIDauth.php');
 $client_cert = $_SERVER['SSL_CLIENT_CERT'];
 
 // Service Provider (source of request)
-$issuer = $_REQUEST['authreqissuer'];
+$issuer = $_GET['authreqissuer'];
 
 // where to store temporary files
 // (by default it gets the tmp directory)
 $tmpDir = sys_get_temp_dir();
 
 // private key belonging to server's SSL certificate
-$server_key = "/etc/apache2/keys/ssl-cert-rena.key"; 
+$server_key = "/etc/ssl/private/server.key";
 
 
 /* ------ DO NOT MODIFY BELOW THIS LINE ------   */
 
-// initialize authention
-$auth = new WebIDauth($client_cert, $issuer, $tmpDir, $server_key);
+// display certificate contents if told to
+if ($_GET['display']) {
+    // test if we can write to the tmp dir
+    $tmpfile = $tmpDir . "/INFO" . md5(time().rand());
+    $handle = fopen($tmpfile, "w") or die("Cannot write file to temporary dir (" . $tmpfile . ")!");
+    fclose($handle);
+    unlink($tmpfile);
 
-if ($auth) {
-    $auth->processReq();
-    $auth->redirect();
+    // get the modulus from the browser certificate (ugly hack)
+    $tmpCRTname = $tmpDir . "/INFO" . md5(time().rand());
+    // write the certificate into the temporary file
+    $handle = fopen($tmpCRTname, "w");
+    fwrite($handle, $client_cert);
+    fclose($handle);
+
+    $command = "openssl x509 -in $tmpCRTname -text -noout";
+    $output = shell_exec($command);
+    // delete the temporary CRT file
+    unlink($tmpCRTname);
+    
+    // print output
+    echo "<pre>" . $output . "</pre>\n";
+
+} else if (strlen($issuer) > 0) {
+	// process the request if we have an issuer
+	$auth = new WebIDauth($client_cert, $issuer, $tmpDir);
+
+    if ($auth) {
+       	$auth->processReq();
+   	    $auth->redirect();
+	}
+} else {
+	// display how to proceed 
+	echo "<font color=\"red\">You have not provided the Service Provider's URI!</font><br/>\n";
+	echo "Either go to <a href=\"https://auth.fcns.eu/\">https://auth.fcns.eu/</a> and use the form at the top of the page, or append <b>?authreqissuer=http://YourServerURI</b> after the browser's URL.\n";
 }
+
 ?>

@@ -147,7 +147,7 @@ class WebIDauth {
     {
         return $this;
     }
-
+    
     /** 
      * Process the request by comparing the modulus in the public key of the
      * certificate with the modulus in webid profile. If everything is ok, it
