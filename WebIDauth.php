@@ -4,7 +4,7 @@
 // Filename   : WebIDauth.php
 // Date       : 5th Apr 2011
 //
-// Version 0.1
+// Version 0.2
 // 
 // Copyright 2011 fcns.eu
 // Author: Andrei Sambra - andrei@fcns.eu
@@ -38,9 +38,13 @@ require_once('arc/ARC2.php');
 class WebIDauth {
     public $err     = array(); // will hold our errors for diagnostics
     private $ts     = NULL; // timestamp in W3C XML format
+    private $cert   = NULL; // php array with the contents of the certificate
     private $cert_pem    = NULL; // certificate in pem format
     private $modulus = NULL; // modulus component of the public key
     private $exponent = NULL; // exponent component of the public key
+    private $is_bnode = false; // if the modulus is expressed as a bnode
+    private $webid = array(); // webid URIs
+    private $claim_id = NULL; // the webid for which we have a match
     private $cert_txt = NULL; // textual representation of the certificate
     private $issuer  = NULL; // issuer uri
     private $privKey = NULL; // private key of the IdP's SSL certificate (this server)
@@ -97,7 +101,7 @@ class WebIDauth {
             $tmpCRTname = $this->tmp . "/CRT" . md5(time().rand());
             // write the certificate into the temporary file
             $handle = fopen($tmpCRTname, "w") or die("[Runtime Error] Cannot open temporary file to store the client's certificate!");
-            fwrite($handle, $this->cert);
+            fwrite($handle, $this->cert_pem);
             fclose($handle);
 
             // get the hexa representation of the modulus
@@ -108,6 +112,25 @@ class WebIDauth {
             // get the full contents of the certificate
             $command = "openssl x509 -in " . $tmpCRTname . " -noout -text";
             $this->cert_txt = shell_exec($command);
+            
+            // create a php array with the contents of the certificate
+            $this->cert = openssl_x509_parse(openssl_x509_read($this->cert_pem));
+
+            if (!$this->cert) {
+                $this->err[] = $this->nocert;
+                $this->code = "nocert";
+                $this->data = $this->retErr($this->code);
+            }
+            
+            // get subjectAltName from certificate (there might be more stuff in AltName)
+            $alt = explode(', ', $this->cert['extensions']['subjectAltName']);
+            // find the webid URI
+            foreach ($alt as $val) {
+                if (strstr($val, 'URI:')) {
+                    $webid = explode('URI:', $val);
+                    $this->webid[] = $webid[1];
+                }
+            }
                                 
           	// delete the temporary certificate file
            	unlink($tmpCRTname);
@@ -174,16 +197,52 @@ class WebIDauth {
 
     /**
      * Display an extensive overview of the whole authentication process
-     * 
+     * @return html data
      */
     public function display()
     {
+        // display all WebIDs in the certificate
+        echo "Your certificate contains the following WebIDs:<br/>\n";
+        echo "<ul>\n";
+        foreach ($this->webid as $webid)
+            echo "<li>" . $webid . "</li>\n";
+        echo "</ul><br/>\n";
+
+        // display the WebID that got a match
+        echo "The WebID URI used to claim your identity is:<br/>\n";
+        echo "<ul>\n";
+        echo "  <li>" . $this->claim_id . " (your claim was ";
+        echo isset($this->claim_id)?'<font color="green">SUCCESSFUL</font>!)':'<font color="red">UNSUCCESSFUL</font>!)';        
+        echo "  </li>\n";
+        echo "</ul><br/>\n";
+        
+        // print the url suffix
+        echo "The WebID URL suffix (to be signed) for your service provider is:<br/>\n";
+        echo "<ul>\n";
+        echo "  <li>" . urldecode($this->data) . "</li>\n";
+        echo "</ul><br/>\n";
+
+        if (sizeof($this->webid) > 1)         
+            echo "<font color=\"orange\">WARNING:</font> Your modulus has more than one relation to a hexadecimal string. Unless both of those strings map to the same number, your identification experience will vary across clients.<br/><br/>\n";
+        // warn if we have a bnode modulus
+        if ($this->is_bnode)
+            echo "<font color=\"orange\">WARNING:</font> your modulus is a blank node. The newer specification requires this to be a literal.<br/><br/>\n";
+        
+        // print errors if any
+        if (sizeof($this->err)) {
+            echo "Error code:<br/>\n";
+            echo "<ul>\n";
+            echo "  <li><font color=\"red\">" . $this->code . "</font> " . $this->getErr() . "</li>\n";
+            echo "</ul><br/>\n";
+        }
+        
         // print the certificate in it's raw format
-        echo "Certificate in PEM format: <br/>\n";
+        echo "<p>&nbsp;</p>\n";
+        echo "<strong>Certificate in PEM format: </strong><br/>\n";
         echo "<pre>" . $this->cert_pem . "</pre><br/><br/>\n";
 
         // print the certificate in text format
-        echo "Certificate in text format: <br/>\n";
+        echo "<strong>Certificate in text format: </strong><br/>\n";
         echo "<pre>" . $this->cert_txt . "</pre><br/><br/>\n";
         
     }
@@ -198,16 +257,8 @@ class WebIDauth {
      */
     function processReq()
     {
-        $crt = openssl_x509_parse($this->cert);
-
-        if (!$crt) {
-            $this->err = $this->nocert;
-            $this->code = "nocert";
-            $this->data = $this->retErr($this->code);
-        }
-
         // get expiration date
-        $expire = $crt['validTo_time_t'];
+        $expire = $this->cert['validTo_time_t'];
     
         // do not proceed if certificate has expired
         if (time() > $expire) {
@@ -216,77 +267,88 @@ class WebIDauth {
             $this->data = $this->retErr($this->code);
         }
         
-        // get subjectAltName from certificate (there might be more stuff in AltName)
-        $alt = explode(', ', $crt['extensions']['subjectAltName']);
-        echo "<pre>" . print_r($alt, true) . "</pre>";
+        // default = no match
+        $match = false;
+        $match_id = array();
+        // try to find a match for each webid URI in the certificate
+        // maximum of 3 URIs per certificate - to prevent DoS
+        $i = 0;
+        while ($i < 3) {
+            
+            $webid = $this->webid[$i];
+            // get identity for webid profile 
+            $graph = new Graphite();
+            $graph->load($webid);
+            $person = $graph->resource($webid);
 
-        // find the webid URI
-        foreach ($alt as $val) {
-            if (strstr($val, 'URI:')) {
-                $webid = explode('URI:', $val);
-                $webid = $webid[1];
-                break;
-            }
-        }
-
-        // get identity for webid profile 
-        $graph = new Graphite();
-        $graph->load($webid);
-        $person = $graph->resource($webid);
-
-        // check if we have a valid resource structure
-        if (!$person) {
-            $this->err = "[CRITICAL] Cannot build resource graph for WebID: " . $webid;
-            $this->code = "IdPError";
-            $this->data = $this->retErr($this->code);
-        }
-
-        // parse all certificates contained in the webid document
-        foreach ($graph->allOfType('http://www.w3.org/ns/auth/rsa#RSAPublicKey') as $certs) {
-            $identity = $certs->get('http://www.w3.org/ns/auth/cert#identity');
-    
-            // proceed if the identity of subjectAltName matches one identity in the webid 
-            if ($identity == $webid) {
-                // get corresponding resources for modulus and exponent
-                if (substr($certs->get('http://www.w3.org/ns/auth/rsa#modulus'), 0, 2) == '_:') {
-                    $mod = $graph->resource($certs->get('http://www.w3.org/ns/auth/rsa#modulus'));
-                    $hex = $mod->all('http://www.w3.org/ns/auth/cert#hex')->join(',');
-                } else {
-                    $hex = $certs->get('http://www.w3.org/ns/auth/rsa#modulus');
-                }
-                           
-                // uglier but easier to process
-                $hex_vals = explode(',', $hex);
-                
-                $ok = 0;
-                // go through each key and check if it matches
-                foreach ($hex_vals as $hex) {
-                    // clean up strings
-            		$hex = preg_replace('/\s+/', '', $hex);
-		
-	    	        // check if the two modulus values match
-                    if ($hex == $this->modulus) {
-                        $this->data = $this->issuer . "?webid=" . urlencode($webid) . "&ts=" . urlencode($this->ts);
-                        $ok = 1;
-                        // we got a match -> exit loop
-                        break;
-                    } else {
-                        continue;
-                    }
-                }
-                // we had no match            
-                if ($ok == 0) {
-                    $this->err = $this->noVerifiedWebId;
-                    $this->code = "noVerifiedWebId";
-                    $this->data = $this->retErr($this->code);
-                }
-            } // we have no matching identity in the webid profile
-            else {
-                $this->err = $this->noWebId;
-                $this->code = "noWebId";
+            // check if we have a valid resource structure
+            if (!$person) {
+                $this->err = "[CRITICAL] Cannot build resource graph for WebID: " . $webid;
+                $this->code = "IdPError";
                 $this->data = $this->retErr($this->code);
             }
-        } // end foreach
+
+            $bnode = false;
+            // parse all certificates contained in the webid document
+            foreach ($graph->allOfType('http://www.w3.org/ns/auth/rsa#RSAPublicKey') as $certs) {
+                $identity = $certs->get('http://www.w3.org/ns/auth/cert#identity');
+    
+                // proceed if the identity of subjectAltName matches one identity in the webid 
+                if ($identity == $webid) {
+                    // save the URI if it matches an identity
+                    $match_id[] = $webid;
+                    
+                    // get corresponding resources for modulus and exponent
+                    if (substr($certs->get('http://www.w3.org/ns/auth/rsa#modulus'), 0, 2) == '_:') {
+                        $mod = $graph->resource($certs->get('http://www.w3.org/ns/auth/rsa#modulus'));
+                        $hex = $mod->all('http://www.w3.org/ns/auth/cert#hex')->join(',');
+                        $bnode = true;
+                    } else {
+                        $hex = $certs->get('http://www.w3.org/ns/auth/rsa#modulus');
+                    }
+
+                    // uglier but easier to process
+                    $hex_vals = explode(',', $hex);
+                
+                    // go through each key and check if it matches
+                    foreach ($hex_vals as $hex) {
+                        // clean up strings
+                		$hex = preg_replace('/\s+/', '', $hex);
+		
+	        	        // check if the two modulus values match
+                        if ($hex == $this->modulus) {
+                            $this->data = $this->issuer . "?webid=" . urlencode($webid) . "&ts=" . urlencode($this->ts);
+                            $match = true;
+                            $this->claim_id = $webid;
+                            $this->is_bnode = $bnode;
+                            // we got a match -> exit loop
+                            break;
+                        } else {
+                            continue;
+                        }
+                    }
+                } 
+            } // end foreach($cert)
+
+            $i++;
+        } // end while()
+
+        // we had no match, return false          
+        if (!$match) {
+            $this->err = $this->noVerifiedWebId;
+            $this->code = "noVerifiedWebId";
+            $this->data = $this->retErr($this->code);
+            return false;
+        }
+        // if no identity is found, return false
+        if (!sizeof($match_id)) {
+            $this->err = $this->noWebId;
+            $this->code = "noWebId";
+            $this->data = $this->retErr($this->code);
+            return false;
+        }
+        
+        return true;
     } // end function
     
     /** 

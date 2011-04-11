@@ -42,8 +42,10 @@ $issuer = $_GET['authreqissuer'];
 
 // instantiate the WebIDauth class
 $auth = new WebIDauth($client_cert, $issuer, $tmpDir, $server_key);
+$success = $auth->processReq();
 
-// process once we have the auth class loaded
+
+// 
 if ($auth) {
     // display certificate contents if told to
     if ($_GET['display']) {
@@ -51,7 +53,6 @@ if ($auth) {
 
     } else {
         if (strlen($issuer) > 0) {
-            $auth->processReq();
       	    $auth->redirect();
     	} else {
             // display how to proceed 
