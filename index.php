@@ -24,12 +24,6 @@ require_once('WebIDauth.php');
 
 /* Configuration variables (you can modify these) */
 
-// client's browser certificate (in PEM format)
-$client_cert = $_SERVER['SSL_CLIENT_CERT'];
-
-// Service Provider (source of request)
-$issuer = $_GET['authreqissuer'];
-
 // where to store temporary files
 // (by default it gets the tmp directory)
 $tmpDir = sys_get_temp_dir();
@@ -40,7 +34,13 @@ $server_key = "/etc/ssl/private/server.key";
 
 /* ------ DO NOT MODIFY BELOW THIS LINE ------   */
 
+// client's browser certificate (in PEM format)
+$client_cert = $_SERVER['SSL_CLIENT_CERT'];
+
+// Service Provider (source of request)
+$issuer = $_GET['authreqissuer'];
 // display certificate contents if told to
+
 if ($_GET['display']) {
     // test if we can write to the tmp dir
     $tmpfile = $tmpDir . "/INFO" . md5(time().rand());
