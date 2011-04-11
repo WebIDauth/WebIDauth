@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset='utf-8'>
+
+  <title>WebIDauth/WebIDauth @ GitHub</title>
+
+  <style type="text/css">
+    body {
+      margin-top: 1.0em;
+      background-color: #7baad1;
+      font-family: Helvetica, Arial, FreeSans, san-serif;
+      color: #000000;
+    }
+    #container {
+      margin: 0 auto;
+      width: 700px;
+    }
+    h1 { font-size: 3.8em; color: #84552e; margin-bottom: 3px; }
+    h1 .small { font-size: 0.4em; }
+    h1 a { text-decoration: none }
+    h2 { font-size: 1.5em; color: #84552e; }
+    h3 { text-align: center; color: #84552e; }
+    a { color: #84552e; }
+    .description { font-size: 1.2em; margin-bottom: 30px; margin-top: 30px; font-style: italic;}
+    .download { float: right; }
+    pre { background: #000; color: #fff; padding: 15px;}
+    hr { border: 0; width: 80%; border-bottom: 1px solid #aaa}
+    .footer { text-align:center; padding-top:30px; font-style: italic; }
+  </style>
+</head>
+
+<body>
+  <a href="http://github.com/WebIDauth/WebIDauth"><img style="position: absolute; top: 0; right: 0; border: 0;" src="http://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub" /></a>
+
+  <div id="container">
+
+    <div class="download">
+      <a href="http://github.com/WebIDauth/WebIDauth/zipball/master">
+        <img border="0" width="90" src="http://github.com/images/modules/download/zip.png"></a>
+      <a href="http://github.com/WebIDauth/WebIDauth/tarball/master">
+        <img border="0" width="90" src="http://github.com/images/modules/download/tar.png"></a>
+    </div>
+
+    <h1><a href="http://github.com/WebIDauth/WebIDauth">WebIDauth</a>
+      <span class="small">by <a href="http://github.com/WebIDauth">WebIDauth</a></span></h1>
+
+    <div class="description">
+      WebIDauth is an authentication service for WebID enabled FOAF profiles, aiming to provide a service similar to foafssl.org.
+    </div>
+
+    <p>If you are fairly familiar with how foafssl.org works, then you will immediately understand how WebIDauth works.
+
+For example, the website http://webid.fcns.eu/ could have a "Login" link on their main page to allow users to authenticate using their webids. This link points to a server which is running WebIDauth, let's say https://auth.fcns.eu/ and which we will call IdP from now on. A typical link would look something like this: https://auth.fcns.eu/auth/index.php?authreqissuer=https://webid.fcns.eu/index.php
+
+What happens next is the IdP will demand a certificate from the browser. From the certificate it will extract the webid URI, then after fetching the foaf profile located at that specific URI it will attempt to match the public key of the certificate with the data found in the foaf profile.
+
+If the two match, it will then redirect the user back to the page contained in the authreqissuer variable (the service at http://webid.fcns.eu/), appending several variables. Following the model from foafssl.org, the new URL will look like this: $authreqissuer?webid=$webid&ts=$timeStamp&sig=$URLSignature&referrer=$referer
+
+Where the above variables have the following meanings:
+
+    $authreqissuer is the URL passed by the server in the initial request.
+    $webid is the WebID of the user connecting.
+    $timeStamp is a time stamp in XML Schema format. This timestamp protects against replay attacks.
+    $URLSignature is the signature of the whole URL in bold above.
+    $referer is the address of the IdP. (might be needed to fetch the public key of the IdP's SSL certificate)
+</p><h2>Dependencies</h2>
+<p>PHP, OpenSSL, Apache's mod_ssl</p>
+<h2>Install</h2>
+<p>1. Simply copy the all the contents to your public web directory.
+2. Make sure Apache's mod_ssl is enabled on your webserver.
+3. Edit file 'index.php' and replace the $server_key variable to use your server's private key. You may also change the temporary directory to some other location than the default one.
+4. Save everything and start authenticating users by having them click a link similar to this one:
+https://<your webserver's url>/index.php?authreqissuer=<url of the site into which you want to login></p>
+<h2>License</h2>
+<p>GNU Affero General Public License</p>
+<h2>Authors</h2>
+<p>Andrei Sambra </p>
+<h2>Contact</h2>
+<p>Author (auth@fcns.eu)<br/>      </p>
+
+
+    <h2>Download</h2>
+    <p>
+      You can download this project in either
+      <a href="http://github.com/WebIDauth/WebIDauth/zipball/master">zip</a> or
+      <a href="http://github.com/WebIDauth/WebIDauth/tarball/master">tar</a> formats.
+    </p>
+    <p>You can also clone the project with <a href="http://git-scm.com">Git</a>
+      by running:
+      <pre>$ git clone git://github.com/WebIDauth/WebIDauth</pre>
+    </p>
+
+    <div class="footer">
+      get the source code on GitHub : <a href="http://github.com/WebIDauth/WebIDauth">WebIDauth/WebIDauth</a>
+    </div>
+
+  </div>
+
+  <script type="text/javascript">
+var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+</script>
+<script type="text/javascript">
+try {
+var pageTracker = _gat._getTracker("UA-2605982-14");
+pageTracker._trackPageview();
+} catch(err) {}</script>
+</body>
+</html>
