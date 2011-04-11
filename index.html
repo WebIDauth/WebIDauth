@@ -46,25 +46,50 @@
       <span class="small">by <a href="http://github.com/WebIDauth">WebIDauth</a></span></h1>
 
     <div class="description">
-      WebIDauth is an authentication service for WebID enabled FOAF profiles, aiming to provide a service similar to foafssl.org.
+      WebIDauth is a PHP authentication service for <a href="http://www.w3.org/wiki/WebID">WebID</a> enabled <a href="http://www.foaf-project.org/">FOAF</a> profiles, aiming to provide a service s    imilar to <a href="https://foafssl.org/srv/idp">foafssl.org</a>. This library is currently powering auth.fcns.eu.
     </div>
 
-    <p>If you are fairly familiar with how foafssl.org works, then you will immediately understand how WebIDauth works.
+<br/><br/><strong>Functionalities</strong><br/><br/>
 
-For example, the website http://webid.fcns.eu/ could have a "Login" link on their main page to allow users to authenticate using their webids. This link points to a server which is running WebIDauth, let's say https://auth.fcns.eu/ and which we will call IdP from now on. A typical link would look something like this: https://auth.fcns.eu/auth/index.php?authreqissuer=https://webid.fcns.eu/index.php
+ <p>Right now, WebIDauth supports the following functionalities:<br/>
+<ul>
+<li>if you select 'Display certificate instead of authenticating?' you can see the contents of the certificate you are using to connect to this site</li>
+<li>checks if the SubjectAltName filed contains something else other than the webid uri, and only processeses the URI:</li>
+<li>checks if the webid profile contains multiple values for modulus (e.g. multiple public keys) and cycles through them until it gets a match</li>
+</ul><br/>
+<strong>How it works</strong><br/></p>
+
+If you are fairly familiar with how foafssl.org works, then you will immediately understand how WebIDauth works.
+
+For example, the website <i>http://webid.fcns.eu/</i> could have a "Login" link on the main page to allow users to authenticate using their webids. This link points to a server which is runnin    g WebIDauth, let's say <i>https://auth.fcns.eu/</i> and which we will call IdP (Identity Provider) from now on. A typical link would look something like this:<br/><br/>
+<tt>https://auth.fcns.eu/auth/index.php?authreqissuer=https://webid.fcns.eu/index.php</tt><br/><br/>
 
 What happens next is the IdP will demand a certificate from the browser. From the certificate it will extract the webid URI, then after fetching the foaf profile located at that specific URI it will attempt to match the public key of the certificate with the data found in the foaf profile.
 
-If the two match, it will then redirect the user back to the page contained in the authreqissuer variable (the service at http://webid.fcns.eu/), appending several variables. Following the model from foafssl.org, the new URL will look like this: $authreqissuer?webid=$webid&ts=$timeStamp&sig=$URLSignature&referrer=$referer
+If the two match, it will then redirect the user back to the page contained in the authreqissuer variable (the service at http://webid.fcns.eu/), appending several variables. Following the model from foafssl.org, the new URL will look like this:<br/>
+<b>$authreqissuer?webid=$webid&ts=$timeStamp</b>&sig=$URLSignature&referrer=$referer<br/><br/>
 
-Where the above variables have the following meanings:
+Where the above variables have the following meanings:<br/>
+<ul>
+<li><tt>$authreqissuer</tt> is the URL passed by the server in the initial request.</li>
+<li><tt>$webid</tt> is the WebID of the user connecting.</li>
+<li><tt>$timeStamp</tt> is a time stamp in XML Schema format. This timestamp protects against replay attacks.</li>
+<li><tt>$URLSignature</tt> is the signature of the whole URL in bold above.</li>
+<li><tt>$referer</tt> is the address of the IdP. (might be needed to fetch the public key of the IdP\'s SSL certificate)</li>
+</ul>
 
-    $authreqissuer is the URL passed by the server in the initial request.
-    $webid is the WebID of the user connecting.
-    $timeStamp is a time stamp in XML Schema format. This timestamp protects against replay attacks.
-    $URLSignature is the signature of the whole URL in bold above.
-    $referer is the address of the IdP. (might be needed to fetch the public key of the IdP's SSL certificate)
-</p><h2>Dependencies</h2>
+<strong>Error responses</strong><br/><br/>
+
+In case of error the service gets redirected to the following URL: $authreqissuer?error=$code, where $code can be either one of:<br/>
+<ul>
+<li><tt>nocert</tt>: No certificates installed in the client’s browser.</li>
+<li><tt>certExpired</tt>: The certificate has expired</li>
+<li><tt>noVerifiedWebId</tt>: WebId does not match the certificate.</li>
+<li><tt>noWebId</tt>: No identity found for existing WebID.</li>
+<li><tt>IdPError</tt>: Other error(s) in the IdP setup. Please warn the IdP administrator.</li>
+</ul>
+
+<h2>Dependencies</h2>
 <p>PHP, OpenSSL, Apache's mod_ssl</p>
 <h2>Install</h2>
 <p>1. Simply copy the all the contents to your public web directory.
@@ -77,7 +102,8 @@ https://<your webserver's url>/index.php?authreqissuer=<url of the site into whi
 <h2>Authors</h2>
 <p>Andrei Sambra </p>
 <h2>Contact</h2>
-<p>Author (auth@fcns.eu)<br/>      </p>
+<p>Author (auth@fcns.eu)
+<br/>      </p>
 
 
     <h2>Download</h2>
