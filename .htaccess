@@ -1,0 +1,3 @@
+SSLVerifyClient optional_no_ca
+SSLVerifyDepth 1
+SSLOptions +ExportCertData
