@@ -38,7 +38,10 @@ require_once('arc/ARC2.php');
 class WebIDauth {
     public $err     = array(); // will hold our errors for diagnostics
     private $ts     = NULL; // timestamp in W3C XML format
-    private $cert    = NULL; // certificate in pem format
+    private $cert_pem    = NULL; // certificate in pem format
+    private $modulus = NULL; // modulus component of the public key
+    private $exponent = NULL; // exponent component of the public key
+    private $cert_txt = NULL; // textual representation of the certificate
     private $issuer  = NULL; // issuer uri
     private $privKey = NULL; // private key of the IdP's SSL certificate (this server)
     private $tmp    = NULL; // location to store temporary files needed by openssl 
@@ -66,43 +69,64 @@ class WebIDauth {
     {
         $this->ts = date("Y-m-dTH:i:sP", time());
     
-        if ($certificate) {
-            $this->cert = $certificate;
-        } else {
-            $this->err[] = "You have to provide a certificate!";
-        }
-
-        if ($issuer) {
-            $this->issuer = $issuer;
-        } else {
-            $this->err[] = "You have to provide an URI for the issuer!";
-        }
-        
+        // check first if we can write in the temp dir
         if ($tmp) {
             $this->tmp = $tmp;
             // test if we can write to this dir
             $tmpfile = $this->tmp . "/CRT" . md5(time().rand());
-            $handle = fopen($tmpfile, "w") or die("Cannot write file to temporary dir (" . $tmpfile . ")!");
+            $handle = fopen($tmpfile, "w") or die("[Runtime Error] Cannot write file to temporary dir (" . $tmpfile . ")!");
       	    fclose($handle);
       	    unlink($tmpfile);
         } else {
-            $this->err[] = "You have to provide a location to store temporary files!";
-        }
+            $this->err[] = "[Runtime Error] You have to provide a location to store temporary files!";
+        }        
         
-        if ($privKey) {
-            // check if we can open location and then read key
-            $fp = fopen($privKey, "r") or die("Cannot open privte key file for the server's SSL certificate!");
-            $this->privKey = fread($fp, 8192);
-            fclose($fp);
-        } else {
-            $this->err[] = "You have to provide the location of the server SSL certificate's private key!";
-        }
-
         // check if we have openssl installed 
         $command = "openssl version";
         $output = shell_exec($command);
         if (preg_match("/command not found/", $output) == 1) {
-            $this->err[] = "OpenSSL may not be installed on your host!";
+            $this->err[] = "[Runtime Error] OpenSSL may not be installed on your host!";
+        }
+        
+        // process certificate contents 
+        if ($certificate) {
+            // set the certificate in pem format
+            $this->cert_pem = $certificate;
+
+            // get the modulus from the browser certificate (ugly hack)
+            $tmpCRTname = $this->tmp . "/CRT" . md5(time().rand());
+            // write the certificate into the temporary file
+            $handle = fopen($tmpCRTname, "w") or die("[Runtime Error] Cannot open temporary file to store the client's certificate!");
+            fwrite($handle, $this->cert);
+            fclose($handle);
+
+            // get the hexa representation of the modulus
+          	$command = "openssl x509 -in " . $tmpCRTname . " -modulus -noout";
+          	$output = explode('=', shell_exec($command));
+            $this->modulus = preg_replace('/\s+/', '', strtolower($output[1]));
+
+            // get the full contents of the certificate
+            $command = "openssl x509 -in " . $tmpCRTname . " -noout -text";
+            $this->cert_txt = shell_exec($command);
+                                
+          	// delete the temporary certificate file
+           	unlink($tmpCRTname);
+        } else {
+            $this->err[] = "[Client Error] You have to provide a certificate!";
+        }
+
+        // process issuer
+        if ($issuer)
+            $this->issuer = $issuer;
+                
+        // load private key
+        if ($privKey) {
+            // check if we can open location and then read key
+            $fp = fopen($privKey, "r") or die("[Runtime Error] Cannot open privte key file for the server's SSL certificate!");
+            $this->privKey = fread($fp, 8192);
+            fclose($fp);
+        } else {
+            $this->err[] = "[Runtime Error] You have to provide the location of the server SSL certificate's private key!";
         }
 
         // check if everything is good
@@ -147,7 +171,23 @@ class WebIDauth {
     {
         return $this;
     }
-    
+
+    /**
+     * Display an extensive overview of the whole authentication process
+     * 
+     */
+    public function display()
+    {
+        // print the certificate in it's raw format
+        echo "Certificate in PEM format: <br/>\n";
+        echo "<pre>" . $this->cert_pem . "</pre><br/><br/>\n";
+
+        // print the certificate in text format
+        echo "Certificate in text format: <br/>\n";
+        echo "<pre>" . $this->cert_txt . "</pre><br/><br/>\n";
+        
+    }
+  
     /** 
      * Process the request by comparing the modulus in the public key of the
      * certificate with the modulus in webid profile. If everything is ok, it
@@ -215,21 +255,6 @@ class WebIDauth {
                     $hex = $certs->get('http://www.w3.org/ns/auth/rsa#modulus');
                 }
                            
-                // get the modulus from the browser certificate (ugly hack)
-                $tmpCRTname = $this->tmp . "/CRT" . md5(time().rand());
-                // write the certificate into the temporary file
-        	    $handle = fopen($tmpCRTname, "w");
-        	    fwrite($handle, $this->cert);
-                fclose($handle);
-
-                // get the hexa representation of the modulus
-            	$command = "openssl x509 -in $tmpCRTname -modulus -noout";
-            	$output = explode('=', shell_exec($command));
-            	$output = $output[1];
-                $modulus = preg_replace('/\s+/', '', strtolower($output));
-            	// delete the temporary CRT file
-            	unlink($tmpCRTname);
-
                 // uglier but easier to process
                 $hex_vals = explode(',', $hex);
                 
@@ -240,10 +265,10 @@ class WebIDauth {
             		$hex = preg_replace('/\s+/', '', $hex);
 		
 	    	        // check if the two modulus values match
-                    if ($hex == $modulus) {
+                    if ($hex == $this->modulus) {
                         $this->data = $this->issuer . "?webid=" . urlencode($webid) . "&ts=" . urlencode($this->ts);
                         $ok = 1;
-
+                        // we got a match -> exit loop
                         break;
                     } else {
                         continue;
@@ -263,7 +288,7 @@ class WebIDauth {
             }
         } // end foreach
     } // end function
-
+    
     /** 
      * Redirect user to the Service Provider's page, then exit.
      * The header location is signed with the private key of the IdP 
