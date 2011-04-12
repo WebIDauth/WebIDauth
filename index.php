@@ -31,28 +31,33 @@ $tmpDir = sys_get_temp_dir();
 // private key belonging to server's SSL certificate
 $server_key = "/var/ssl/server.key";
 
-
 /* ------ DO NOT MODIFY BELOW THIS LINE ------   */
 
 // client's browser certificate (in PEM format)
 $client_cert = $_SERVER['SSL_CLIENT_CERT'];
 
+// if the client certificate's public key matches his private key
+$verified = $_SERVER['SSL_CLIENT_VERIFY'];
+
 // Service Provider (source of request)
 $issuer = $_GET['authreqissuer'];
 
 // instantiate the WebIDauth class
-$auth = new WebIDauth($client_cert, $issuer, $tmpDir, $server_key);
-$success = $auth->processReq();
+$auth = new WebIDauth($client_cert, $issuer, $tmpDir, $verified, $server_key);
 
 
-// 
+// do the magic stuff :-)
 if ($auth) {
     // display certificate contents if told to
-    if ($_GET['display']) {
-        $auth->display();
-
+    if ($_GET['verbose']) {
+		// true - means to enable verbose authentication
+        echo "<table style=\"margin: 0.5em; padding:0.5em; background-color:#fff; border:dashed 1px grey;\"><tr><td>\n";
+        $success = $auth->processReq($_GET['verbose']);
+        echo "</td></tr></table>\n";
+		$auth->display();	
     } else {
         if (strlen($issuer) > 0) {
+			$auth->processReq();
       	    $auth->redirect();
     	} else {
             // display how to proceed 
