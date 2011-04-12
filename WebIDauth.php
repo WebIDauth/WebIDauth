@@ -130,7 +130,7 @@ class WebIDauth {
             $this->cert = openssl_x509_parse(openssl_x509_read($this->cert_pem));
 
             if (!$this->cert) {
-                $this->err[] = $this->nocert;
+                $this->err[] = WebIDauth::nocert;
                 $this->code = "nocert";
                 $this->data = $this->retErr($this->code);
             }
@@ -286,7 +286,7 @@ class WebIDauth {
         } else {
             if ($verbose) 
                 echo "<font color=\"red\">FAILED</font> <small>(Reason: " . $this->verified . ")</small><br/>\n";
-            $this->err = $this->certNoOwnership;
+            $this->err = WebIDauth::certNoOwnership;
             $this->code = "certNoOwnership";
             $this->data = $this->retErr($this->code);
             return false;
@@ -302,7 +302,7 @@ class WebIDauth {
                 echo "<font color=\"red\">FAILED</font> ";
                 echo "<small>(Reason: " . date("Y-m-d H:i:s", $expire) . " &lt; " . date("Y-m-d H:i:s", $now) . ")</small><br/>\n";
             }
-            $this->err = $this->certExpired;
+            $this->err = WebIDauth::certExpired;
             $this->code = "certExpired";
             $this->data = $this->retErr($this->code);
             return false;
@@ -313,10 +313,10 @@ class WebIDauth {
         
         // check if we have URIs
         if (!sizeof($this->webid)) {
-            if ($verbose) 
-                echo "<br/> * <font color=\"red\">" . $this->noURI . "!</font><br/>\n";
-
-            $this->err = $this->noURI;
+            if ($verbose)
+                echo "<br/> * <font color=\"red\">" . WebIDauth::noURI . "!</font><br/>\n";
+            
+            $this->err = WebIDauth::noURI;
             $this->code = "noURI";
             $this->data = $this->retErr($this->code);
             return false;
@@ -324,7 +324,7 @@ class WebIDauth {
             // list total number of webids in the certificate
             if ($verbose) 
                 echo "<br/> * Found " . sizeof($this->webid) . " URIs in the certificate (a maximum of 3 will be tested).<br/>\n";
-        }        
+        }
         
         // default = no match
         $match = false;
@@ -445,7 +445,7 @@ class WebIDauth {
         if (!$match) {
             if ($verbose)
                 echo "<br/><font color=\"red\"> * " . $this->noVerifiedWebId . "</font><br/>\n";
-            $this->err = $this->noVerifiedWebId;
+            $this->err = WebIDauth::noVerifiedWebId;
             $this->code = "noVerifiedWebId";
             $this->data = $this->retErr($this->code);
             return false;
@@ -454,7 +454,7 @@ class WebIDauth {
         if (!sizeof($match_id)) {
             if ($verbose)
                 echo "<br/><font color=\"red\"> * " . $this->noWebId . "</font><br/>\n";
-            $this->err = $this->noWebId;
+            $this->err = WebIDauth::noWebId;
             $this->code = "noWebId";
             $this->data = $this->retErr($this->code);
             return false;
