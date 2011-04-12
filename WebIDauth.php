@@ -55,17 +55,19 @@ class WebIDauth {
 
 	const parseError = "Cannot parse WebID";
 
-	const nocert = "No certificates installed in the client's browser.";
+	const nocert = "No certificates installed in the client's browser";
     
-    const certNoOwnership = "No ownership! Could not verify that the client certificate's public key matches their private key.";
+    const certNoOwnership = "No ownership! Could not verify that the client certificate's public key matches their private key";
 
     const certExpired = "The certificate has expired";
     
-    const noVerifiedWebId = "WebId does not match the certificate.";
+    const noVerifiedWebId = "WebId does not match the certificate";
     
-    const noWebId = "No identity found for existing WebID.";
+    const noURI = "No WebID URIs found in the provided certificate";
     
-    const IdPError = "Other error(s) in the IdP setup. Please warn the IdP administrator.";
+    const noWebId = "No identity found for existing WebID";
+    
+    const IdPError = "Other error(s) in the IdP setup. Please warn the IdP administrator";
 
     /** 
      * Initialize the variables and perfom sanity checks
@@ -235,7 +237,8 @@ class WebIDauth {
         echo "</ul><br/>\n";
 
         if (sizeof($this->webid) > 1)         
-            echo "<font color=\"orange\">WARNING:</font> Your modulus has more than one relation to a hexadecimal string. Unless both of those strings map to the same number, your identification experience will vary across clients.<br/><br/>\n";
+            echo "<font color=\"orange\">WARNING:</font> Your modulus has more than one relation to a hexadecimal string. ";
+            echo "Unless both of those strings map to the same number, your identification experience will vary across clients.<br/><br/>\n";
         // warn if we have a bnode modulus
         if ($this->is_bnode)
             echo "<font color=\"orange\">WARNING:</font> your modulus is a blank node. The newer specification requires this to be a literal.<br/><br/>\n";
@@ -286,6 +289,7 @@ class WebIDauth {
             $this->err = $this->certNoOwnership;
             $this->code = "certNoOwnership";
             $this->data = $this->retErr($this->code);
+            return false;
         }
 
         if ($verbose)
@@ -301,15 +305,26 @@ class WebIDauth {
             $this->err = $this->certExpired;
             $this->code = "certExpired";
             $this->data = $this->retErr($this->code);
+            return false;
         } else {
             if ($verbose)
                 echo "<font color=\"green\">PASSED</font><br/>\n";
         }
         
-        // list total number of webids in the certificate
-        if ($verbose) {
-            echo "<br/> * Found " . sizeof($this->webid) . " URIs in the certificate (a maximum of 3 will be tested).<br/>\n";
-        }
+        // check if we have URIs
+        if (!sizeof($this->webid)) {
+            if ($verbose) 
+                echo "<br/> * <font color=\"red\">" . $this->noURI . "!</font><br/>\n";
+
+            $this->err = $this->noURI;
+            $this->code = "noURI";
+            $this->data = $this->retErr($this->code);
+            return false;
+        } else {
+            // list total number of webids in the certificate
+            if ($verbose) 
+                echo "<br/> * Found " . sizeof($this->webid) . " URIs in the certificate (a maximum of 3 will be tested).<br/>\n";
+        }        
         
         // default = no match
         $match = false;
