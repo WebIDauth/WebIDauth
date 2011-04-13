@@ -1,0 +1,65 @@
+// Copyright 2011 fcns.eu
+// Author: Andrei Sambra - andrei@fcns.eu
+
+
+# What is WebIDauth? 
+
+WebIDauth is an authentication service for [WebID](http://www.w3.org/wiki/WebID) enabled [FOAF](www.foaf-project.org/) profiles, aiming to provide a service similar to [foafssl.org](https://foafssl.org/srv/idp).
+
+# Functionalities
+
+Right now, WebIDauth supports the following functionalities:
+
+* checks the request for a variable called "display" and if it is found, it displays the contents of the certificate used to connect to the IdP (the request does not have to contain a valid _authreqissuer_ value)
+* checks if the SubjectAltName filed contains something else other than the webid uri, and only processes the URI:
+* checks if the webid profile contains multiple values for modulus (e.g. multiple public keys) and cycles through them
+
+# How it works
+
+If you are fairly familiar with how foafssl.org works, then you will immediately understand how WebIDauth works. 
+
+For example, the website http://webid.fcns.eu/ could have a "Login" link on their main page to allow users to authenticate using their webids.  This link points to a server which is running WebIDauth, let's say https://auth.fcns.eu/ and which we will call IdP from now on. A typical link would look something like this:
+`https://auth.fcns.eu/auth/index.php?authreqissuer=https://webid.fcns.eu/index.php`
+
+What happens next is the IdP will demand a certificate from the browser. From the certificate it will extract the webid URI, then after fetching the foaf profile located at that specific URI it will attempt to match the public key of the certificate with the data found in the foaf profile.
+
+If the two match, it will then redirect the user back to the page contained in the **authreqissuer** variable (the service at http://webid.fcns.eu/), appending several variables. Following the model from foafssl.org, the new URL will look like this: 
+**$authreqissuer?webid=$webid&ts=$timeStamp**&sig=$URLSignature&referrer=$referer
+
+Where the above variables have the following meanings:
+
+* `$authreqissuer` is the URL passed by the server in the initial request.
+* `$webid` is the WebID of the user connecting.
+* `$timeStamp` is a time stamp in XML Schema format. This timestamp protects against replay attacks.
+* `$URLSignature` is the signature of the whole URL in bold above.
+* `$referer` is the address of the IdP. (might be needed to fetch the public key of the IdP's SSL certificate)
+
+# Error responses
+
+In case of error the service gets redirected to the following URL: **$authreqissuer?error=$code**
+
+Where $code can be either one of:
+
+* `nocert:` No certificates installed in the client's browser.
+* `certExpired:` The certificate has expired
+* `noVerifiedWebId:` WebId does not match the certificate.
+* `noWebId:` No identity found for existing WebID.
+* `IdPError:` Other error(s) in the IdP setup. Please warn the IdP administrator.
+
+# Dependencies
+
+PHP, OpenSSL, Apache's mod_ssl
+
+# Install
+
+1. Simply copy the all the contents to your public web directory.
+2. Make sure Apache's mod_ssl is enabled on your webserver.
+3. Edit file 'index.php' and replace the $server_key variable to use your server's private key. You may also change the temporary directory to some other location than the default one.
+4. Save everything and start authenticating users by having them click a link similar to this one:
+https:///index.php?authreqissuer=
+
+
+# TODO
+
+* test different formats of webid profiles
+
