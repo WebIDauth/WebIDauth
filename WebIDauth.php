@@ -194,7 +194,7 @@ class WebIDauth {
     {
         $ret = "";
         foreach ($this->err as $error) {
-            echo "Error: " . $error . "<br/>";
+            echo "FATAL: " . $error . "<br/>";
         }
         return $ret;
     }
@@ -215,51 +215,56 @@ class WebIDauth {
     public function display()
     {
         // display all WebIDs in the certificate
-		echo "<p>&nbsp;</p>\n";
-        echo "Your certificate contains the following WebIDs:<br/>\n";
-        echo "<ul>\n";
-        foreach ($this->webid as $webid)
-            echo "<li>" . $webid . "</li>\n";
-        echo "</ul><br/>\n";
+		$ret = "<p>&nbsp;</p>\n";
+        $ret .= "Your certificate contains the following WebIDs:<br/>\n";
+        $ret .= "<ul>\n";
+        if (sizeof($this->webid)) {
+            foreach ($this->webid as $webid)
+                $ret .= "<li>" . $webid . "</li>\n";
+            $ret .= "</ul><br/>\n";
+        } else {
+            $ret .= "<font color=\"red\">" . WebIDauth::noURI . "!</font><br/></br>\n";
+        }
 
         // display the WebID that got a match
-        echo "The WebID URI used to claim your identity is:<br/>\n";
-        echo "<ul>\n";
-        echo "  <li>" . $this->claim_id . " (your claim was ";
-        echo isset($this->claim_id)?'<font color="green">SUCCESSFUL</font>!)':'<font color="red">UNSUCCESSFUL</font>!)';        
-        echo "  </li>\n";
-        echo "</ul><br/>\n";
+        $ret .= "The WebID URI used to claim your identity is:<br/>\n";
+        $ret .= "<ul>\n";
+        $ret .= "  <li>" . $this->claim_id . " (your claim was ";
+        $ret .= isset($this->claim_id)?'<font color="green">SUCCESSFUL</font>!)':'<font color="red">UNSUCCESSFUL</font>!)';        
+        $ret .= "  </li>\n";
+        $ret .= "</ul><br/>\n";
         
         // print the url suffix
-        echo "The WebID URL suffix (to be signed) for your service provider is:<br/>\n";
-        echo "<ul>\n";
-        echo "  <li>" . urldecode($this->data) . "</li>\n";
-        echo "</ul><br/>\n";
+        $ret .= "The WebID URL suffix (to be signed) for your service provider is:<br/>\n";
+        $ret .= "<ul>\n";
+        $ret .= "  <li>" . urldecode($this->data) . "</li>\n";
+        $ret .= "</ul><br/>\n";
 
         if (sizeof($this->webid) > 1)         
-            echo "<font color=\"orange\">WARNING:</font> Your modulus has more than one relation to a hexadecimal string. ";
-            echo "Unless both of those strings map to the same number, your identification experience will vary across clients.<br/><br/>\n";
+            $ret .= "<font color=\"orange\">WARNING:</font> Your modulus has more than one relation to a hexadecimal string. ";
+            $ret .= "Unless both of those strings map to the same number, your identification experience will vary across clients.<br/><br/>\n";
         // warn if we have a bnode modulus
         if ($this->is_bnode)
-            echo "<font color=\"orange\">WARNING:</font> your modulus is a blank node. The newer specification requires this to be a literal.<br/><br/>\n";
+            $ret .= "<font color=\"orange\">WARNING:</font> your modulus is a blank node. The newer specification requires this to be a literal.<br/><br/>\n";
         
         // print errors if any
         if (sizeof($this->err)) {
-            echo "Error code:<br/>\n";
-            echo "<ul>\n";
-            echo "  <li><font color=\"red\">" . $this->code . "</font> " . $this->getErr() . "</li>\n";
-            echo "</ul><br/>\n";
+            $ret .= "Error code:<br/>\n";
+            $ret .= "<ul>\n";
+            $ret .= "  <li><font color=\"red\">" . $this->code . "</font> " . $this->getErr() . "</li>\n";
+            $ret .= "</ul><br/>\n";
         }
         
         // print the certificate in it's raw format
-        echo "<p>&nbsp;</p>\n";
-        echo "<strong>Certificate in PEM format: </strong><br/>\n";
-        echo "<pre>" . $this->cert_pem . "</pre><br/><br/>\n";
+        $ret .= "<p>&nbsp;</p>\n";
+        $ret .= "<strong>Certificate in PEM format: </strong><br/>\n";
+        $ret .= "<pre>" . $this->cert_pem . "</pre><br/><br/>\n";
 
         // print the certificate in text format
-        echo "<strong>Certificate in text format: </strong><br/>\n";
-        echo "<pre>" . $this->cert_txt . "</pre><br/><br/>\n";
-        
+        $ret .= "<strong>Certificate in text format: </strong><br/>\n";
+        $ret .= "<pre>" . $this->cert_txt . "</pre><br/><br/>\n";
+
+        return $ret;
     }
   
     /** 
@@ -286,7 +291,7 @@ class WebIDauth {
         } else {
             if ($verbose) 
                 echo "<font color=\"red\">FAILED</font> <small>(Reason: " . $this->verified . ")</small><br/>\n";
-            $this->err = WebIDauth::certNoOwnership;
+            $this->err[] = WebIDauth::certNoOwnership;
             $this->code = "certNoOwnership";
             $this->data = $this->retErr($this->code);
             return false;
@@ -302,7 +307,7 @@ class WebIDauth {
                 echo "<font color=\"red\">FAILED</font> ";
                 echo "<small>(Reason: " . date("Y-m-d H:i:s", $expire) . " &lt; " . date("Y-m-d H:i:s", $now) . ")</small><br/>\n";
             }
-            $this->err = WebIDauth::certExpired;
+            $this->err[] = WebIDauth::certExpired;
             $this->code = "certExpired";
             $this->data = $this->retErr($this->code);
             return false;
@@ -311,19 +316,25 @@ class WebIDauth {
                 echo "<font color=\"green\">PASSED</font><br/>\n";
         }
         
+        if ($verbose)
+            echo "<br/> * Checking if certificate contains URIs in the subjectAltName field...\n";
+        
         // check if we have URIs
         if (!sizeof($this->webid)) {
-            if ($verbose)
-                echo "<br/> * <font color=\"red\">" . WebIDauth::noURI . "!</font><br/>\n";
-            
-            $this->err = WebIDauth::noURI;
+            if ($verbose) {
+                echo "<font color=\"red\">FAILED</font><br/>\n";
+                echo "<font color=\"red\">&nbsp;&nbsp;&nbsp;<small>(Reason: " . WebIDauth::noURI . "!)</small></font><br/>\n";
+            }
+            $this->err[] = WebIDauth::noURI;
             $this->code = "noURI";
             $this->data = $this->retErr($this->code);
             return false;
         } else {
             // list total number of webids in the certificate
-            if ($verbose) 
+            if ($verbose) {
+                echo "<font color=\"green\">PASSED</font><br/>\n";
                 echo "<br/> * Found " . sizeof($this->webid) . " URIs in the certificate (a maximum of 3 will be tested).<br/>\n";
+            }
         }
         
         // default = no match
@@ -444,8 +455,8 @@ class WebIDauth {
         // we had no match, return false          
         if (!$match) {
             if ($verbose)
-                echo "<br/><font color=\"red\"> * " . $this->noVerifiedWebId . "</font><br/>\n";
-            $this->err = WebIDauth::noVerifiedWebId;
+                echo "<br/><font color=\"red\"> * " . WebIDauth::noVerifiedWebId . "</font><br/>\n";
+            $this->err[] = WebIDauth::noVerifiedWebId;
             $this->code = "noVerifiedWebId";
             $this->data = $this->retErr($this->code);
             return false;
@@ -453,8 +464,8 @@ class WebIDauth {
         // if no identity is found, return false
         if (!sizeof($match_id)) {
             if ($verbose)
-                echo "<br/><font color=\"red\"> * " . $this->noWebId . "</font><br/>\n";
-            $this->err = WebIDauth::noWebId;
+                echo "<br/><font color=\"red\"> * " . WebIDauth::noWebId . "</font><br/>\n";
+            $this->err[] = WebIDauth::noWebId;
             $this->code = "noWebId";
             $this->data = $this->retErr($this->code);
             return false;
