@@ -438,6 +438,9 @@ class WebIDauth {
                     if ($verbose)
                         echo "<font color=\"red\">FAILED</font><br/>\n";
                 }
+                // do not check further identities
+                if ($this->claim_id)
+                    break;
             } // end foreach($cert)
 
             // failed to find an identity at the specified WebID URI 
@@ -446,9 +449,12 @@ class WebIDauth {
 					echo "<font color=\"red\">FAILED</font><br/>\n";
 			}
 			// exit while loop if we have a match
-			if ($match)
+			if ($match) {
+                if ($verbose)
+                    echo "<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>Match found, ignoring futher tests!</b><br/>\n";
 				break;           
- 
+            }
+            
             $i++;
         } // end while()
 
@@ -473,7 +479,7 @@ class WebIDauth {
         
         // otherwise all is good
         if ($verbose)
-            echo "<br/><font color=\"green\"> * All tests have passed!</font><br/>\n";
+            echo "<br/><font color=\"green\"> * Authentication successful!</font><br/>\n";
         return true;
     } // end function
  
