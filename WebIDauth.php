@@ -168,7 +168,7 @@ class WebIDauth {
         // check if everything is good
         if (sizeof($this->err)) {
             $this->getErr();
-            return false;
+            exit;
         } else {
             return true;
         }
@@ -400,7 +400,7 @@ class WebIDauth {
                     // go through each key and check if it matches
                     foreach ($hex_vals as $key => $hex) {
                         // clean up strings
-                		$hex = preg_replace('/\s+/', '', $hex);
+                		$hex = strtolower(preg_replace('/\s+/', '', $hex));
 		
                         if ($verbose) {
                             echo "<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";

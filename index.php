@@ -21,8 +21,11 @@
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 require_once('WebIDauth.php');
-
+require_once('logger.php');
 /* Configuration variables (you can modify these) */
+
+// log requests (for debugging purposes)
+$log = new KLogger( "logfile.log" , KLogger::DEBUG );
 
 // where to store temporary files
 // (by default it gets the tmp directory)
@@ -50,12 +53,16 @@ $auth = new WebIDauth($client_cert, $issuer, $tmpDir, $verified, $server_key);
 if ($auth) {
     // display certificate contents if told to
     if ($_GET['verbose']) {
+        // log who is accessing the service (might be needed later for debugging)
+        $log->LogInfo("[VERBOSE] From: " . $_SERVER["HTTP_HOST"]);
 		// true - means to enable verbose authentication
         echo "<table style=\"margin: 0.5em; padding:0.5em; background-color:#fff; border:dashed 1px grey;\"><tr><td>\n";
         $success = $auth->processReq($_GET['verbose']);
         echo "</td></tr></table>\n";
-		$auth->display();	
+		echo $auth->display();	
     } else {
+        // log who is accessing the service (might be needed later for debugging)
+        $log->LogInfo("[AUTHENTICATING] From: " . $_SERVER["HTTP_HOST"] . " => " . $issuer);
         if (strlen($issuer) > 0) {
 			$auth->processReq();
       	    $auth->redirect();
