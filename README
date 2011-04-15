@@ -50,6 +50,8 @@ Where $code can be either one of:
 
 PHP, OpenSSL, Apache's mod_ssl
 
+It currently uses graphite (http://graphite.ecs.soton.ac.uk/) and ARC2 (https://github.com/semsol/arc2/) PHP libraries.
+
 # Install
 
 1. Simply copy the all the contents to your public web directory.
@@ -60,7 +62,7 @@ https:///index.php?authreqissuer=
 
 # License
 
-TBD
+GNU Affero General Public License V3
 
 # TODO
 
