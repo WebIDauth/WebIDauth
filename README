@@ -18,12 +18,12 @@ Right now, WebIDauth supports the following functionalities:
 
 If you are fairly familiar with how foafssl.org works, then you will immediately understand how WebIDauth works. 
 
-For example, the website http://webid.fcns.eu/ could have a "Login" link on their main page to allow users to authenticate using their webids.  This link points to a server which is running WebIDauth, let's say https://auth.fcns.eu/ and which we will call IdP from now on. A typical link would look something like this:
+For example, the web application at http://webid.fcns.eu/ (which could be called Service Provider or SP) could have a "Login" link on their main page to allow users to authenticate using their webids.  This link points to a server which is running WebIDauth, let's say https://auth.fcns.eu/, and which we will call IdP (Identification Provider) from now on. A typical link would look something like this:
 `https://auth.fcns.eu/auth/index.php?authreqissuer=https://webid.fcns.eu/index.php`
 
-What happens next is the IdP will demand a certificate from the browser. From the certificate it will extract the webid URI, then after fetching the foaf profile located at that specific URI it will attempt to match the public key of the certificate with the data found in the foaf profile.
+What happens next is the IdP will demand an SSL certificate from the user's browser. From the certificate it will extract the webid URI, then after fetching the FOAF profile located at that specific URI it will attempt to match the public key of the certificate with the data found in the FOAF profile.
 
-If the two match, it will then redirect the user back to the page contained in the **authreqissuer** variable (the service at http://webid.fcns.eu/), appending several variables. Following the model from foafssl.org, the new URL will look like this: 
+If the two match, it will then redirect the user back to the page contained in the **authreqissuer** variable (the Service at http://webid.fcns.eu/), appending several variables. Following the model from foafssl.org, the new URL will look like this: 
 **$authreqissuer?webid=$webid&ts=$timeStamp**&sig=$URLSignature&referrer=$referer
 
 Where the above variables have the following meanings:
@@ -31,7 +31,7 @@ Where the above variables have the following meanings:
 * `$authreqissuer` is the URL passed by the server in the initial request.
 * `$webid` is the WebID of the user connecting.
 * `$timeStamp` is a time stamp in XML Schema format. This timestamp protects against replay attacks.
-* `$URLSignature` is the signature of the whole URL in bold above.
+* `$URLSignature` is the signature of the whole URL in bold above (TODO: explain that signature mechanism).
 * `$referer` is the address of the IdP. (might be needed to fetch the public key of the IdP's SSL certificate)
 
 # Error responses
@@ -58,6 +58,9 @@ PHP, OpenSSL, Apache's mod_ssl
 4. Save everything and start authenticating users by having them click a link similar to this one:
 https:///index.php?authreqissuer=
 
+# License
+
+TBD
 
 # TODO
 
