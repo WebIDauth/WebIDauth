@@ -31,7 +31,7 @@ Where the above variables have the following meanings:
 * `$authreqissuer` is the URL passed by the server in the initial request.
 * `$webid` is the WebID of the user connecting.
 * `$timeStamp` is a time stamp in XML Schema format. This timestamp protects against replay attacks.
-* `$URLSignature` is the signature of the whole URL in bold above (TODO: explain that signature mechanism).
+* `$URLSignature` is the signature of the whole URL in bold above (signed with the IdP's private SSL key).
 * `$referer` is the address of the IdP. (might be needed to fetch the public key of the IdP's SSL certificate)
 
 # Error responses
