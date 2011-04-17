@@ -36,22 +36,22 @@ require_once('arc/ARC2.php');
  * http://webid.fcns.eu/index.php?webid=$webid&ts=$timeStamp&sig=$URLSignature
  */
 class WebIDauth {
-    public $err     = array(); // will hold our errors for diagnostics
-    private $ts     = NULL; // timestamp in W3C XML format
-    private $cert   = NULL; // php array with the contents of the certificate
-    private $cert_pem    = NULL; // certificate in pem format
-    private $modulus = NULL; // modulus component of the public key
-    private $exponent = NULL; // exponent component of the public key
-    private $is_bnode = false; // if the modulus is expressed as a bnode
-    private $webid = array(); // webid URIs
-    private $claim_id = NULL; // the webid for which we have a match
-    private $cert_txt = NULL; // textual representation of the certificate
-    private $issuer  = NULL; // issuer uri
-    private $tmp    = NULL; // location to store temporary files needed by openssl 
-    private $code    = NULL; // will hold error codes
-    private $verified = NULL; // TLS client private key verification
+    public  $err        = array(); // will hold our errors for diagnostics
+    private $webid      = array(); // webid URIs
+    private $ts         = null; // timestamp in W3C XML format
+    private $cert       = null; // php array with the contents of the certificate
+    private $cert_pem   = null; // certificate in pem format
+    private $modulus    = null; // modulus component of the public key
+    private $exponent   = null; // exponent component of the public key
+    private $is_bnode   = false; // if the modulus is expressed as a bnode
+    private $claim_id   = null; // the webid for which we have a match
+    private $cert_txt   = null; // textual representation of the certificate
+    private $issuer     = null; // issuer uri
+    private $tmp        = null; // location to store temporary files needed by openssl 
+    private $code       = null; // will hold error codes
+    private $verified   = null; // TLS client private key verification
 
-    private $privKey = NULL; // private key of the IdP's SSL certificate (this server)
+    private $privKey = null; // private key of the IdP's SSL certificate (this server)
 
 	const parseError = "Cannot parse WebID";
 
@@ -74,17 +74,22 @@ class WebIDauth {
      * "/etc/apache2/keys/ssl-cert-rena.key"
      * @return boolean
      */
-    public function __construct($certificate = NULL,
-                                $issuer = NULL,
-                                $tmp = NULL,
-                                $verified = NULL,
-                                $privKey = NULL
+    public function __construct($log,
+                                $certificate = null,
+                                $issuer = null,
+                                $tmp = null,
+                                $verified = null,
+                                $privKey = null
                                 )
     {
+        // set timestamp in XML format
         $this->ts = date("Y-m-dTH:i:sP", time());
     
+        // set whether the TLS handshake was successful or not
         $this->verified = $verified;
-    
+
+        // set log object
+        $this->log = $logging;
     
         // check first if we can write in the temp dir
         if ($tmp) {
@@ -276,65 +281,50 @@ class WebIDauth {
      * @return boolean 
      */
    
-	function processReq($verbose = NULL)
+	function processReq($verbose = null, $host = null)
     {
         // get expiration date
         $expire = $this->cert['validTo_time_t'];
-    
-        if ($verbose)
-            echo "<br/> * Checking ownership of certificate (public key matches private key)...\n";
+
+        // here we will store verbose messages
+        $info = '';
+        $info .= "<br/> * Checking ownership of certificate (public key matches private key)...\n";
+
+        // Log steps from now on
+        $this->log->LogInfo("[" . $host . "] " . "* Checking ownership of certificate (public key matches private key)...");
+        
         // verify client certificate using TLS
 		if (($this->verified == 'SUCCESS') || ($this->verified == 'GENEROUS')) {
-            if ($verbose) 
-                echo "<font color=\"green\">PASSED</font> <small>(Reason: " . $this->verified . ")</small><br/>\n";
-            
+            $info .= "<font color=\"green\">PASSED</font> <small>(Reason: " . $this->verified . ")</small><br/>\n";
+            $this->log->LogInfo("[" . $host . "] " . "  PASSED -> Reason: " . $this->verified . "");
         } else {
-            if ($verbose) 
-                echo "<font color=\"red\">FAILED</font> <small>(Reason: " . $this->verified . ")</small><br/>\n";
+            $info .= "<font color=\"red\"></font> <small>(Reason: " . $this->verified . ")</small><br/>\n";
+            $this->log->LogInfo("[" . $host . "] " . "  FAILED -> Reason: " . $this->verified . "");
+            
             $this->err[] = WebIDauth::certNoOwnership;
             $this->code = "certNoOwnership";
             $this->data = $this->retErr($this->code);
             return false;
         }
 
-        if ($verbose)
-            echo "<br/> * Checking if certificate has expired...\n";
-
-        $now = time();
-        // do not proceed if certificate has expired
-        if ($expire < $now) {
-            if ($verbose) {
-                echo "<font color=\"red\">FAILED</font> ";
-                echo "<small>(Reason: " . date("Y-m-d H:i:s", $expire) . " &lt; " . date("Y-m-d H:i:s", $now) . ")</small><br/>\n";
-            }
-            $this->err[] = WebIDauth::certExpired;
-            $this->code = "certExpired";
-            $this->data = $this->retErr($this->code);
-            return false;
-        } else {
-            if ($verbose)
-                echo "<font color=\"green\">PASSED</font><br/>\n";
-        }
-        
-        if ($verbose)
-            echo "<br/> * Checking if certificate contains URIs in the subjectAltName field...\n";
+        $info .= "<br/> * Checking if certificate contains URIs in the subjectAltName field...\n";
+        $this->log->LogInfo("[" . $host . "] " . "* Checking if certificate contains URIs in the subjectAltName field...");
         
         // check if we have URIs
         if (!sizeof($this->webid)) {
-            if ($verbose) {
-                echo "<font color=\"red\">FAILED</font><br/>\n";
-                echo "<font color=\"red\">&nbsp;&nbsp;&nbsp;<small>(Reason: " . WebIDauth::noURI . "!)</small></font><br/>\n";
-            }
+            $info .= "<font color=\"red\">FAILED</font><br/>\n";
+            $info .= "<font color=\"red\">&nbsp;&nbsp;&nbsp;<small>(Reason: " . WebIDauth::noURI . "!)</small></font><br/>\n";
+            $this->log->LogInfo("[" . $host . "] " . "  FAILED -> Reason: " . WebIDauth::noURI . "!)");
+
             $this->err[] = WebIDauth::noURI;
             $this->code = "noURI";
             $this->data = $this->retErr($this->code);
             return false;
         } else {
             // list total number of webids in the certificate
-            if ($verbose) {
-                echo "<font color=\"green\">PASSED</font><br/>\n";
-                echo "<br/> * Found " . sizeof($this->webid) . " URIs in the certificate (a maximum of 3 will be tested).<br/>\n";
-            }
+            $info .= "<font color=\"green\">PASSED</font><br/>\n";
+            $info .= "<br/> * Found " . sizeof($this->webid) . " URIs in the certificate (a maximum of 3 will be tested).<br/>\n";
+            $this->log->LogInfo("[" . $host . "] " . "  PASSED -> Found " . sizeof($this->webid) . " URIs in the certificate (a maximum of 3 will be tested)");
         }
         
         // default = no match
@@ -350,18 +340,16 @@ class WebIDauth {
         while ($i < $max) {
             $webid = $this->webid[$i];
 
-            if ($verbose) {
-				$curr = $i + 1;
-                echo "<br/> * Checking URI " . $curr;
-                echo "<small> (" . $webid . ")</small>...<br/>\n";  
-            }
+    		$curr = $i + 1;
+            $info .= "<br/> * Checking URI " . $curr ." <small> (" . $webid . ")</small>...<br/>\n";
+            $this->log->LogInfo("[" . $host . "] " . "* Checking URI " . $curr ." (" . $webid . ")...");
+
             // fetch identity for webid profile 
             $graph = new Graphite();
             $graph->load($webid);
             $person = $graph->resource($webid);
 
-            if ($verbose)
-                echo "&nbsp; - Trying to fetch and process certificate(s) from webid profile...\n";
+            $info .= "&nbsp; - Trying to fetch and process certificate(s) from webid profile...\n";
 
             $bnode = false;
 			$identity = false;
@@ -369,14 +357,15 @@ class WebIDauth {
             foreach ($graph->allOfType('http://www.w3.org/ns/auth/rsa#RSAPublicKey') as $certs) {
                 $identity = $certs->get('http://www.w3.org/ns/auth/cert#identity');
  
-                if ($verbose) {
-					echo "<font color=\"green\">PASSED</font><br/>\n";
-                    echo "&nbsp;&nbsp;&nbsp; - Testing if the client's identity matches the one in the webid...\n";
-				}
+				$info .= "<font color=\"green\">PASSED</font><br/>\n";
+                $info .= "&nbsp;&nbsp;&nbsp; - Testing if the client's identity matches the one in the webid...\n";
+                $this->log->LogInfo("[" . $host . "] " . "  - Trying to fetch and process certificate(s) from webid profile...PASSED");
+
+				
                 // proceed if the identity of subjectAltName matches one identity in the webid 
                 if ($identity == $webid) {
-                    if ($verbose)
-                        echo "<font color=\"green\">PASSED</font><br/>\n";
+                    $info .= "<font color=\"green\">PASSED</font><br/>\n";
+                    $this->log->LogInfo("[" . $host . "] " . "      - Testing if the client's identity matches the one in the webid...PASSED");
                     // save the URI if it matches an identity
                     $match_id[] = $webid;
                     
@@ -392,30 +381,30 @@ class WebIDauth {
                     // uglier but easier to process
                     $hex_vals = explode(',', $hex);
 
-                    if ($verbose) {
-                        echo "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
-                        echo "Testing if the modulus representation matches the one in the webid ";
-                        echo "(found <font color=\"red\">" . sizeof($hex_vals) . "</font> modulus values)...<br/>\n";
-                    }
+                    $info .= "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
+                    $info .= "Testing if the modulus representation matches the one in the webid ";
+                    $info .= "(found <font color=\"red\">" . sizeof($hex_vals) . "</font> modulus values)...<br/>\n";
+                    $this->log->LogInfo("[" . $host . "] " . "          - Testing if the modulus representation matches the one in the webid -> found " . sizeof($hex_vals) . " modulus values");
+                    
+                    
                     // go through each key and check if it matches
                     foreach ($hex_vals as $key => $hex) {
                         // clean up strings
                 		$hex = strtolower(preg_replace('/\s+/', '', $hex));
 		
-                        if ($verbose) {
-                            echo "<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
-                            echo "Testing modulus: " . ($key + 1) . "/" . sizeof($hex_vals) . "...\n";
-                        }
+                        $info .= "<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
+                        $info .= "Testing modulus: " . ($key + 1) . "/" . sizeof($hex_vals) . "...\n";
 	
 	        	        // check if the two modulus values match
                         if ($hex == $this->modulus) {
-                            if ($verbose) {
-                                echo "<font color=\"green\">PASSED</font><br/>\n";
-                                echo "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
-            					echo "WebID=" . substr($hex, 0, 15) . "......." . substr($hex, strlen($hex) - 15, 15) . "<br/>\n";
-        						echo "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
-        						echo "&nbsp;Cert&nbsp; =" . substr($this->modulus, 0, 15) . "......." . substr($this->modulus, strlen($this->modulus) - 15, 15) . "<br/>\n";
-                            }                                
+                            $info .= "<font color=\"green\">              * Testing modulus: " . ($key + 1) . "/" . sizeof($hex_vals) . "...PASSED</font><br/>\n";
+                            $info .= "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
+            				$info .= "WebID=" . substr($hex, 0, 15) . "......." . substr($hex, strlen($hex) - 15, 15) . "<br/>\n";
+        					$info .= "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
+        	                $info .= "&nbsp;Cert&nbsp; =" . substr($this->modulus, 0, 15) . "......." . substr($this->modulus, strlen($this->modulus) - 15, 15) . "<br/>\n";
+        	                $this->log->LogInfo("[" . $host . "] " . "              - Testing modulus: " . ($key + 1) . "/" . sizeof($hex_vals) . "...PASSED");
+        	                $this->log->LogInfo("[" . $host . "] " . "                  WebID=" . substr($hex, 0, 15) . "......." . substr($hex, strlen($hex) - 15, 15));
+        	                $this->log->LogInfo("[" . $host . "] " . "                  Cert =" . substr($this->modulus, 0, 15) . "......." . substr($this->modulus, strlen($this->modulus) - 15, 15));
 
                             $this->data = $this->issuer . "?webid=" . urlencode($webid) . "&ts=" . urlencode($this->ts);
                             $match = true;
@@ -424,19 +413,20 @@ class WebIDauth {
                             // we got a match -> exit loop
                             break;
                         } else {
-                            if ($verbose) {
-                                echo "<font color=\"red\">FAILED</font><br/>\n";
-                                echo "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
-            					echo "WebID=" . substr($hex, 0, 15) . "......." . substr($hex, strlen($hex) - 15, 15) . "<br/>\n";
-        						echo "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
-        						echo "&nbsp;Cert&nbsp; =" . substr($this->modulus, 0, 15) . "......." . substr($this->modulus, strlen($this->modulus) - 15, 15) . "<br/>\n";
-							}
+                            $info .= "<font color=\"red\">              * Testing modulus: " . ($key + 1) . "/" . sizeof($hex_vals) . "...FAILED</font><br/>\n";
+                            $info .= "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
+           					$info .= "WebID=" . substr($hex, 0, 15) . "......." . substr($hex, strlen($hex) - 15, 15) . "<br/>\n";
+       						$info .= "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
+      						$info .= "&nbsp;Cert&nbsp; =" . substr($this->modulus, 0, 15) . "......." . substr($this->modulus, strlen($this->modulus) - 15, 15) . "<br/>\n";
+      						$this->log->LogInfo("[" . $host . "] " . "              - Testing modulus: " . ($key + 1) . "/" . sizeof($hex_vals) . "...FAILED");
+        	                $this->log->LogInfo("[" . $host . "] " . "                  WebID=" . substr($hex, 0, 15) . "......." . substr($hex, strlen($hex) - 15, 15));
+        	                $this->log->LogInfo("[" . $host . "] " . "                  Cert =" . substr($this->modulus, 0, 15) . "......." . substr($this->modulus, strlen($this->modulus) - 15, 15));
                             continue;
                         }
                     }
                 } else {
-                    if ($verbose)
-                        echo "<font color=\"red\">FAILED</font><br/>\n";
+                    $info .= "<font color=\"red\">FAILED</font><br/>\n";
+                    $this->log->LogInfo("[" . $host . "] " . "      - Testing if the client's identity matches the one in the webid...FAILED");
                 }
                 // do not check further identities
                 if ($this->claim_id)
@@ -445,13 +435,13 @@ class WebIDauth {
 
             // failed to find an identity at the specified WebID URI 
 			if (!$identity) {
-				if ($verbose)
-					echo "<font color=\"red\">FAILED</font><br/>\n";
+                $info .= "<font color=\"red\">FAILED</font><br/>\n";
+                $this->log->LogInfo("[" . $host . "] " . "  - Trying to fetch and process certificate(s) from webid profile...FAILED");
 			}
 			// exit while loop if we have a match
 			if ($match) {
-                if ($verbose)
-                    echo "<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>Match found, ignoring futher tests!</b><br/>\n";
+                $info .= "<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>Match found, ignoring futher tests!</b><br/>\n";
+                $this->log->LogInfo("[" . $host . "] " . "              Match found, ignoring futher tests!");
 				break;           
             }
             
@@ -460,8 +450,9 @@ class WebIDauth {
 
         // we had no match, return false          
         if (!$match) {
-            if ($verbose)
-                echo "<br/><font color=\"red\"> * " . WebIDauth::noVerifiedWebId . "</font><br/>\n";
+            $info .= "<br/><font color=\"red\"> * Final conclusion: " . WebIDauth::noVerifiedWebId . "</font><br/>\n";
+            $this->log->LogInfo("[" . $host . "] " . "* Final conclusion: " . WebIDauth::noVerifiedWebId);
+            
             $this->err[] = WebIDauth::noVerifiedWebId;
             $this->code = "noVerifiedWebId";
             $this->data = $this->retErr($this->code);
@@ -469,8 +460,9 @@ class WebIDauth {
         }
         // if no identity is found, return false
         if (!sizeof($match_id)) {
-            if ($verbose)
-                echo "<br/><font color=\"red\"> * " . WebIDauth::noWebId . "</font><br/>\n";
+            $info .= "<br/><font color=\"red\"> * " . WebIDauth::noWebId . "</font><br/>\n";
+            $this->log->LogInfo("[" . $host . "] " . "* Final conclusion: " . WebIDauth::noWebId);
+            
             $this->err[] = WebIDauth::noWebId;
             $this->code = "noWebId";
             $this->data = $this->retErr($this->code);
@@ -478,8 +470,12 @@ class WebIDauth {
         }
         
         // otherwise all is good
+        $info .= "<br/><font color=\"green\"> * Authentication successful!</font><br/>\n";
+        $this->log->LogInfo("[" . $host . "] " . "* Final conclusion: authentication successful!");
+  
         if ($verbose)
-            echo "<br/><font color=\"green\"> * Authentication successful!</font><br/>\n";
+            echo $info;
+            
         return true;
     } // end function
  

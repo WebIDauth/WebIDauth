@@ -46,7 +46,7 @@ $verified = $_SERVER['SSL_CLIENT_VERIFY'];
 $issuer = $_GET['authreqissuer'];
 
 // instantiate the WebIDauth class
-$auth = new WebIDauth($client_cert, $issuer, $tmpDir, $verified, $server_key);
+$auth = new WebIDauth($log, $client_cert, $issuer, $tmpDir, $verified, $server_key);
 
 
 // do the magic stuff :-)
@@ -57,14 +57,14 @@ if ($auth) {
         $log->LogInfo("[VERBOSE] From: " . $_SERVER["HTTP_HOST"]);
 		// true - means to enable verbose authentication
         echo "<table style=\"margin: 0.5em; padding:0.5em; background-color:#fff; border:dashed 1px grey;\"><tr><td>\n";
-        $success = $auth->processReq($_GET['verbose']);
+        $success = $auth->processReq($_GET['verbose'], $_SERVER["HTTP_HOST"]);
         echo "</td></tr></table>\n";
 		echo $auth->display();	
     } else {
         // log who is accessing the service (might be needed later for debugging)
         $log->LogInfo("[AUTHENTICATING] From: " . $_SERVER["HTTP_HOST"] . " => " . $issuer);
         if (strlen($issuer) > 0) {
-			$auth->processReq();
+			$auth->processReq(false, $_SERVER["HTTP_HOST"]);
       	    $auth->redirect();
     	} else {
             // display how to proceed 
