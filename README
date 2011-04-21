@@ -10,20 +10,21 @@ WebIDauth is an authentication service for [WebID](http://www.w3.org/wiki/WebID)
 
 Right now, WebIDauth supports the following functionalities:
 
-* checks the request for a variable called "display" and if it is found, it displays the contents of the certificate used to connect to the IdP (the request does not have to contain a valid _authreqissuer_ value)
-* checks if the SubjectAltName filed contains something else other than the webid uri, and only processes the URI:
-* checks if the webid profile contains multiple values for modulus (e.g. multiple public keys) and cycles through them
+* checks the request for a variable called **verbose** and verifies if it is set, and if so it displays the contents of the certificate used to connect to the IdP (the request does not have to contain a valid **authreqissuer** value)
+* checks if the SubjectAltName filed contains something else other than the webid uri, and only processes the URI
+* checks if the webid profile contains multiple public keys and cycles through them looking for a match
 
 # How it works
 
-If you are fairly familiar with how foafssl.org works, then you will immediately understand how WebIDauth works. 
+To take an example, the web application at http://webid.fcns.eu/ (which could be called Service Provider or SP) could have a "Login" link on their main page to allow users to authenticate using their webids.  This link points to a server which is running WebIDauth, let's say https://auth.fcns.eu/, and which we will call IdP (Identification Provider) from now on. A typical link would look something like this:
 
-For example, the web application at http://webid.fcns.eu/ (which could be called Service Provider or SP) could have a "Login" link on their main page to allow users to authenticate using their webids.  This link points to a server which is running WebIDauth, let's say https://auth.fcns.eu/, and which we will call IdP (Identification Provider) from now on. A typical link would look something like this:
 `https://auth.fcns.eu/auth/index.php?authreqissuer=https://webid.fcns.eu/index.php`
 
-What happens next is the IdP will demand an SSL certificate from the user's browser. From the certificate it will extract the webid URI, then after fetching the FOAF profile located at that specific URI it will attempt to match the public key of the certificate with the data found in the FOAF profile.
 
-If the two match, it will then redirect the user back to the page contained in the **authreqissuer** variable (the Service at http://webid.fcns.eu/), appending several variables. Following the model from foafssl.org, the new URL will look like this: 
+What happens next is the IdP will demand an SSL certificate from the user's browser. From the certificate it will extract the webid URI, then after fetching the FOAF profile located at that specific URI it will attempt to match the public key of the certificate with the data found in the FOAF profile. Of course, additional verification steps take place during this process.
+
+If the two match, it will then redirect the user back to the page contained in the **authreqissuer** variable (the Service at http://webid.fcns.eu/), appending several variables. For client compatibility reasons, the variable names are the same with those returbed by foafssl.org, hence the new URL will look like this: 
+
 **$authreqissuer?webid=$webid&ts=$timeStamp**&sig=$URLSignature&referrer=$referer
 
 Where the above variables have the following meanings:
@@ -50,7 +51,7 @@ Where $code can be either one of:
 
 PHP, OpenSSL, Apache's mod_ssl
 
-It currently uses graphite (http://graphite.ecs.soton.ac.uk/) and ARC2 (https://github.com/semsol/arc2/) PHP libraries.
+It currently uses graphite (http://graphite.ecs.soton.ac.uk/) and ARC2 (https://github.com/semsol/arc2/) PHP libraries for RDF parsing.
 
 # Install
 
