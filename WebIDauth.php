@@ -53,9 +53,9 @@ class WebIDauth {
 
     private $privKey = null; // private key of the IdP's SSL certificate (this server)
 
-	const parseError = "Cannot parse WebID";
+    const parseError = "Cannot parse WebID";
 
-	const nocert = "No certificates installed in the client's browser";
+    const nocert = "No certificates installed in the client's browser";
     
     const certNoOwnership = "No ownership! Could not verify that the client certificate's public key matches their private key";
 
@@ -71,7 +71,7 @@ class WebIDauth {
 
     /** 
      * Initialize the variables and perfom sanity checks
-     * "/etc/apache2/keys/ssl-cert-rena.key"
+     *
      * @return boolean
      */
     public function __construct($log,
@@ -79,18 +79,25 @@ class WebIDauth {
                                 $issuer = null,
                                 $tmp = null,
                                 $verified = null,
-                                $privKey = null
+                                $privKey = null,
+                                $protocol = null
                                 )
     {
+        // set log object
+        $this->log = $logging;
+    
+        // check for desired protocol (TLSv1 at least)
+        if ($protocol != 'TLSv1') {
+            $this->err[] = "[SSL Error] TLSv1 required. (found ". $protocol . ")";
+            $this->log->LogInfo("[" . $host . "] " . "* TLSv1 required - found ". $protocol . "..."); 
+        }
+
         // set timestamp in XML format
         $this->ts = date("Y-m-dTH:i:sP", time());
     
         // set whether the TLS handshake was successful or not
         $this->verified = $verified;
 
-        // set log object
-        $this->log = $logging;
-    
         // check first if we can write in the temp dir
         if ($tmp) {
             $this->tmp = $tmp;

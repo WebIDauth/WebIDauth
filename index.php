@@ -36,6 +36,10 @@ $server_key = "/var/ssl/server.key";
 
 /* ------ DO NOT MODIFY BELOW THIS LINE ------   */
 
+
+// SSL protocol
+$protocol = $_SERVER["SSL_PROTOCOL"];
+
 // client's browser certificate (in PEM format)
 $client_cert = $_SERVER['SSL_CLIENT_CERT'];
 
@@ -46,7 +50,7 @@ $verified = $_SERVER['SSL_CLIENT_VERIFY'];
 $issuer = $_GET['authreqissuer'];
 
 // instantiate the WebIDauth class
-$auth = new WebIDauth($log, $client_cert, $issuer, $tmpDir, $verified, $server_key);
+$auth = new WebIDauth($log, $client_cert, $issuer, $tmpDir, $verified, $server_key, $protocol);
 
 
 // do the magic stuff :-)
