@@ -84,7 +84,7 @@ class WebIDauth {
                                 )
     {
         // set log object
-        $this->log = $logging;
+        $this->log = $log;
     
         // check for desired protocol (TLSv1 at least)
         if ($protocol != 'TLSv1') {
