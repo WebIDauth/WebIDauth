@@ -130,6 +130,7 @@ class WebIDauth {
             fclose($handle);
 
             // get the hexa representation of the modulus
+            // TODO: test values containing leading 0s! (they may get truncated)
           	$command = "openssl x509 -in " . $tmpCRTname . " -modulus -noout";
           	$output = explode('=', shell_exec($command));
             $this->modulus = preg_replace('/\s+/', '', strtolower($output[1]));
@@ -397,21 +398,21 @@ class WebIDauth {
                     // go through each key and check if it matches
                     foreach ($hex_vals as $key => $hex) {
                         // clean up strings
-                		$hex = strtolower(preg_replace('/\s+/', '', $hex));
+                		    $hex = strtolower(preg_replace('/\s+/', '', $hex));
 		
                         $info .= "<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
                         $info .= "Testing modulus: " . ($key + 1) . "/" . sizeof($hex_vals) . "...\n";
 	
-	        	        // check if the two modulus values match
+	        	            // check if the two modulus values match
                         if ($hex == $this->modulus) {
                             $info .= "<font color=\"green\">              * Testing modulus: " . ($key + 1) . "/" . sizeof($hex_vals) . "...PASSED</font><br/>\n";
                             $info .= "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
-            				$info .= "WebID=" . substr($hex, 0, 15) . "......." . substr($hex, strlen($hex) - 15, 15) . "<br/>\n";
-        					$info .= "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
-        	                $info .= "&nbsp;Cert&nbsp; =" . substr($this->modulus, 0, 15) . "......." . substr($this->modulus, strlen($this->modulus) - 15, 15) . "<br/>\n";
-        	                $this->log->LogInfo("[" . $host . "] " . "              - Testing modulus: " . ($key + 1) . "/" . sizeof($hex_vals) . "...PASSED");
-        	                $this->log->LogInfo("[" . $host . "] " . "                  WebID=" . substr($hex, 0, 15) . "......." . substr($hex, strlen($hex) - 15, 15));
-        	                $this->log->LogInfo("[" . $host . "] " . "                  Cert =" . substr($this->modulus, 0, 15) . "......." . substr($this->modulus, strlen($this->modulus) - 15, 15));
+                				    $info .= "WebID=" . substr($hex, 0, 15) . "......." . substr($hex, strlen($hex) - 15, 15) . "<br/>\n";
+            					      $info .= "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
+            	              $info .= "&nbsp;Cert&nbsp; =" . substr($this->modulus, 0, 15) . "......." . substr($this->modulus, strlen($this->modulus) - 15, 15) . "<br/>\n";
+            	              $this->log->LogInfo("[" . $host . "] " . "              - Testing modulus: " . ($key + 1) . "/" . sizeof($hex_vals) . "...PASSED");
+            	              $this->log->LogInfo("[" . $host . "] " . "                  WebID=" . substr($hex, 0, 15) . "......." . substr($hex, strlen($hex) - 15, 15));
+            	              $this->log->LogInfo("[" . $host . "] " . "                  Cert =" . substr($this->modulus, 0, 15) . "......." . substr($this->modulus, strlen($this->modulus) - 15, 15));
 
                             $this->data = $this->issuer . "?webid=" . urlencode($webid) . "&ts=" . urlencode($this->ts);
                             $match = true;
@@ -422,12 +423,12 @@ class WebIDauth {
                         } else {
                             $info .= "<font color=\"red\">              * Testing modulus: " . ($key + 1) . "/" . sizeof($hex_vals) . "...FAILED</font><br/>\n";
                             $info .= "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
-           					$info .= "WebID=" . substr($hex, 0, 15) . "......." . substr($hex, strlen($hex) - 15, 15) . "<br/>\n";
-       						$info .= "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
-      						$info .= "&nbsp;Cert&nbsp; =" . substr($this->modulus, 0, 15) . "......." . substr($this->modulus, strlen($this->modulus) - 15, 15) . "<br/>\n";
-      						$this->log->LogInfo("[" . $host . "] " . "              - Testing modulus: " . ($key + 1) . "/" . sizeof($hex_vals) . "...FAILED");
-        	                $this->log->LogInfo("[" . $host . "] " . "                  WebID=" . substr($hex, 0, 15) . "......." . substr($hex, strlen($hex) - 15, 15));
-        	                $this->log->LogInfo("[" . $host . "] " . "                  Cert =" . substr($this->modulus, 0, 15) . "......." . substr($this->modulus, strlen($this->modulus) - 15, 15));
+           					        $info .= "WebID=" . substr($hex, 0, 15) . "......." . substr($hex, strlen($hex) - 15, 15) . "<br/>\n";
+                 						$info .= "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
+                						$info .= "&nbsp;Cert&nbsp; =" . substr($this->modulus, 0, 15) . "......." . substr($this->modulus, strlen($this->modulus) - 15, 15) . "<br/>\n";
+                						$this->log->LogInfo("[" . $host . "] " . "              - Testing modulus: " . ($key + 1) . "/" . sizeof($hex_vals) . "...FAILED");
+          	                $this->log->LogInfo("[" . $host . "] " . "                  WebID=" . substr($hex, 0, 15) . "......." . substr($hex, strlen($hex) - 15, 15));
+          	                $this->log->LogInfo("[" . $host . "] " . "                  Cert =" . substr($this->modulus, 0, 15) . "......." . substr($this->modulus, strlen($this->modulus) - 15, 15));
                             continue;
                         }
                     }
@@ -502,7 +503,7 @@ class WebIDauth {
         openssl_free_key($pkey);
 
         // redirect user back to issuer page
-        header("Location: " . $this->data . "&sig=" . urlencode(base64_encode($signature)) . "&referer=https://" . $_SERVER["SERVER_NAME"]);
+        header("Location: " . $this->data . "&sig=" . rtrim(strtr(base64_encode($signature), '+/', '-_'), '=') . "&referer=https://" . $_SERVER["SERVER_NAME"]);
         exit;
     }
 
