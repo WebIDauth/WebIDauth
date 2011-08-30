@@ -1,4 +1,6 @@
-# Do not perform actual verification of certificate contents (skip going up the chain)
+# Please note that using these options in a .htaccess file is no longer possible in recent versions of Apache, as it leads to really insecure installations. You should put these lines in your httpd.conf instead. 
+
+# Do not perform actual verification of certificate contents (skip verifying the CA too)
 SSLVerifyClient optional_no_ca
 # Do not recursively check who signed the certificate (stop after the initial check)
 SSLVerifyDepth 1
