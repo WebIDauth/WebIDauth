@@ -1,4 +1,6 @@
-# Please note that using these options in a .htaccess file is no longer possible in recent versions of Apache, as it leads to really insecure installations. You should put these lines in your httpd.conf instead. 
+# Please note that using these options in a .htaccess file is no longer possible
+# in recent versions of Apache, as it leads to really insecure installations. 
+# You should put these lines in your httpd.conf instead. 
 
 # Do not perform actual verification of certificate contents (skip verifying the CA too)
 SSLVerifyClient optional_no_ca
