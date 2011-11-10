@@ -362,7 +362,7 @@ class WebIDauth {
             $bnode = false;
 			$identity = false;
             // parse all certificates contained in the webid document
-            foreach ($graph->allOfType('http://www.w3.org/ns/auth/rsa#RSAPublicKey') as $certs) {
+            foreach ($graph->allOfType('rsa:RSAPublicKey') as $certs) {
                 $identity = $certs->get('http://www.w3.org/ns/auth/cert#identity');
  
 				$info .= "<font color=\"green\">PASSED</font><br/>\n";
