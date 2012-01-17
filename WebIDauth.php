@@ -397,7 +397,7 @@ class WebIDauth {
                     $this->log->LogInfo("[" . $host . "] " . "                  WebID=" . substr($hex, 0, 15) . "......." . substr($hex, strlen($hex) - 15, 15));
                     $this->log->LogInfo("[" . $host . "] " . "                  Cert =" . substr($this->modulus, 0, 15) . "......." . substr($this->modulus, strlen($this->modulus) - 15, 15));
 
-                    $this->data = $this->issuer . "?webid=" . urlencode($webid) . "&ts=" . urlencode($this->ts);
+                    $this->data = $this->issuer . (strpos($this->issuer,'?')===false?"?":"&")."webid=" . urlencode($webid) . "&ts=" . urlencode($this->ts);
                     $match = true;
                     $this->claim_id = $webid;
                     $this->is_bnode = $bnode;
