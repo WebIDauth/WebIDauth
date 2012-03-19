@@ -356,6 +356,7 @@ class WebIDauth {
             // fetch identity for webid profile 
             $graph = new Graphite();
             $graph->load($webid);
+	    $graph->ns("cert", "http://www.w3.org/ns/auth/cert#");
             $person = $graph->resource($webid);
             $type = $person->type();
             
