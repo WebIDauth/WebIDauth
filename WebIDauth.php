@@ -22,7 +22,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-require_once('graphite.php');
+require_once('Graphite.php');
 require_once('arc/ARC2.php');
 
 /**
@@ -158,8 +158,8 @@ class WebIDauth {
                 }
             }
                                 
-          	// delete the temporary certificate file
-           	unlink($tmpCRTname);
+            // delete the temporary certificate file
+            unlink($tmpCRTname);
         } else {
             $this->err[] = "[Client Error] You have to provide a certificate!";
         }
