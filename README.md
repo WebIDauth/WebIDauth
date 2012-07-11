@@ -16,7 +16,7 @@ Right now, WebIDauth supports the following functionalities:
 
 # Demo
 
-One may check the demo available at http://auth.my-profile.eu/ for instance (which uses [libAuthentication](https://github.com/melvincarvalho/libAuthentication) to consume WebID and which relies on https://auth.fcns.eu/, the Identification Provider running WebIDauth.
+One may check the demo available at https://my-profile.eu/ for instance (which uses [libAuthentication](https://github.com/melvincarvalho/libAuthentication) to consume WebID and which relies on http://auth.my-profile.eu/, the Identification Provider running WebIDauth.
 
 # How it works
 
