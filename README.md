@@ -65,7 +65,7 @@ It currently uses graphite (http://graphite.ecs.soton.ac.uk/) and ARC2 (https://
 4. Save everything and start authenticating users by having them click a link similar to this one:
 https:///index.php?authreqissuer=
 
-You may test the resulting authentications with [libAuthentication](https://github.com/melvincarvalho/libAuthentication) in PHP applications.
+You may test the resulting authentications with [libAuthentication](https://github.com/melvincarvalho/libAuthentication) or its more compact "forked" sister lib [WebIDDelegatedAuth](https://github.com/WebIDauth/WebIDDelegatedAuth), in PHP applications.
 
 # License
 
