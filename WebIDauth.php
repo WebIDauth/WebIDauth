@@ -32,8 +32,8 @@ require_once('arc/ARC2.php');
  * If successfull, it redirects the user to the Service Provider's URI
  * adding information like webid, timestamp (signing them with the IdP's
  * private key). 
- * Ex. for Service Provider http://webid.fcns.eu it will return:
- * http://webid.fcns.eu/index.php?webid=$webid&ts=$timeStamp&sig=$URLSignature
+ * Ex. for Service Provider http://auth.my-profile.eu it will return:
+ * http://auth.my-profile.eu/index.php?webid=$webid&ts=$timeStamp&sig=$URLSignature
  */
 class WebIDauth {
     public  $err        = array(); // will hold our errors for diagnostics

@@ -16,11 +16,11 @@ Right now, WebIDauth supports the following functionalities:
 
 # Demo
 
-One may check the demo available at http://webid.fcns.eu/ for instance (which uses [libAuthentication](https://github.com/melvincarvalho/libAuthentication) to consume WebID and which relies on https://auth.fcns.eu/, the Identification Provider running WebIDauth.
+One may check the demo available at http://auth.my-profile.eu/ for instance (which uses [libAuthentication](https://github.com/melvincarvalho/libAuthentication) to consume WebID and which relies on https://auth.fcns.eu/, the Identification Provider running WebIDauth.
 
 # How it works
 
-To take an example, the web application at http://sp.example.com/ (which could be called Service Provider or SP) could have a "Login" link on their main page to allow users to authenticate using their webids (check http://webid.fcns.eu/ for an example of such a demo SP).  This link points to a server which is running WebIDauth, let's say https://idp.example.com/, and which we will call IdP (Identification Provider) from now on (check https://auth.fcns.eu/ for a demo of such an IdP). A typical link would look something like this:
+To take an example, the web application at http://sp.example.com/ (which could be called Service Provider or SP) could have a "Login" link on their main page to allow users to authenticate using their webids (check http://auth.my-profile.eu/ for an example of such a demo SP).  This link points to a server which is running WebIDauth, let's say https://idp.example.com/, and which we will call IdP (Identification Provider) from now on (check https://auth.fcns.eu/ for a demo of such an IdP). A typical link would look something like this:
 
 `https://idp.example.com/auth/index.php?authreqissuer=https://sp.example.com/index.php`
 
