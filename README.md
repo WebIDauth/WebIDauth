@@ -4,12 +4,13 @@ Author: Andrei Sambra - andrei@fcns.eu
 
 # What is WebIDauth? 
 
-WebIDauth is an authentication service (or Identification Provider) for [WebID](http://www.w3.org/wiki/WebID) enabled [FOAF](www.foaf-project.org/) profiles, aiming to provide a service similar to [foafssl.org](https://foafssl.org/srv/idp).
+WebIDauth is a "full" authentication service (or Identification Provider) for [WebID](http://www.w3.org/wiki/WebID) enabled [FOAF](www.foaf-project.org/) profiles, aiming to provide a service similar to [foafssl.org](https://foafssl.org/srv/idp).
 
 # Functionalities
 
 Right now, WebIDauth supports the following functionalities:
 
+* initiates the WebID protocol, by requesting an SSL client from connecting clients
 * checks the request for a variable called **verbose** and verifies if it is set, and if so it displays the contents of the certificate used to connect to the IdP (the request does not have to contain a valid **authreqissuer** value)
 * checks if the SubjectAltName filed contains something else other than the webid uri, and only processes the URI
 * checks if the webid profile contains multiple public keys and cycles through them looking for a match
@@ -56,6 +57,9 @@ Where $code can be either one of:
 PHP, OpenSSL, Apache's mod_ssl
 
 It currently uses Graphite (http://graphite.ecs.soton.ac.uk/) and ARC2 (https://github.com/semsol/arc2/) PHP libraries for RDF parsing.
+
+It requires a dedicated Web server whose SSL configuration can be adjusted so that it will initiate the SSL cert request to the connecting clients (see instructions in the example dot.htaccess provided).
+Note that this may require a global configuration for Web servers like Apache, which will prevent hosting other Web apps on the same server if they don't need WebID authentication to be enabled full time. 
 
 # Install
 
