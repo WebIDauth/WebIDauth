@@ -29,7 +29,7 @@ What happens next is the IdP will demand an SSL certificate from the user's brow
 
 If the two match, it will then redirect the user back to the page contained in the **authreqissuer** variable (the Service at http://sp.example.com/), appending several variables. For client compatibility reasons, the variable names are the same with those returbed by foafssl.org, hence the new URL will look like this: 
 
-**$authreqissuer?webid=$webid&ts=$timeStamp**&sig=$URLSignature&referrer=$referer
+**$authreqissuer?webid=$webid&ts=$timeStamp**&sig=$URLSignature&referer=$referer
 
 Where the above variables have the following meanings:
 
