@@ -60,9 +60,10 @@ It currently uses graphite (http://graphite.ecs.soton.ac.uk/) and ARC2 (https://
 # Install
 
 1. Simply copy the all the contents to your public web directory.
-2. Make sure Apache's mod_ssl is enabled on your webserver.
-3. Edit file 'index.php' and replace the $server_key variable to use your server's private key. You may also change the temporary directory to some other location than the default one.
-4. Save everything and start authenticating users by having them click a link similar to this one:
+2. Rename the dot.htaccess file to .htaccess (or adjust your web server's config in a similar way)
+3. Make sure Apache's mod_ssl is enabled on your webserver.
+4. Edit file 'index.php' and replace the $server_key variable to use your server's private key. You may also change the temporary directory to some other location than the default one.
+5. Save everything and start authenticating users by having them click a link similar to this one:
 https:///index.php?authreqissuer=
 
 You may test the resulting authentications with [libAuthentication](https://github.com/melvincarvalho/libAuthentication) or its more compact "forked" sister lib [WebIDDelegatedAuth](https://github.com/WebIDauth/WebIDDelegatedAuth), in PHP applications.
