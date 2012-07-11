@@ -1,5 +1,4 @@
-Copyright 2012 fcns.eu
-Author: Andrei Sambra - andrei@fcns.eu
+Copyright 2012 Andrei Sambra - andrei@fcns.eu
 
 
 # What is WebIDauth? 
@@ -21,7 +20,7 @@ One may check the demo available at https://my-profile.eu/ for instance (which u
 
 # How it works
 
-To take an example, the web application at http://sp.example.com/ (which could be called Service Provider or SP) could have a "Login" link on their main page to allow users to authenticate using their webids (check http://auth.my-profile.eu/ for an example of such a demo SP).  This link points to a server which is running WebIDauth, let's say https://idp.example.com/, and which we will call IdP (Identification Provider) from now on (check https://auth.fcns.eu/ for a demo of such an IdP). A typical link would look something like this:
+To take an example, the web application at http://sp.example.com/ (which could be called Service Provider or SP) could have a "Login" link on their main page to allow users to authenticate using their webids (check http://auth.my-profile.eu/ for an example of such a demo SP).  This link points to a server which is running WebIDauth, let's say https://idp.example.com/, and which we will call IdP (Identification Provider) from now on (check https://auth.my-profile.eu/ for a real IdP). A typical link would look something like this:
 
 `https://auth.my-profile.eu/auth/index.php?authreqissuer=https://sp.example.com/index.php`
 
@@ -70,7 +69,7 @@ Note that this may require a global configuration for Web servers like Apache, w
 5. Save everything and start authenticating users by having them click a link similar to this one:
 https:///index.php?authreqissuer=
 
-You may test the resulting authentications with [libAuthentication](https://github.com/melvincarvalho/libAuthentication) or its more compact "lite" sister lib [WebIDDelegatedAuth](https://github.com/WebIDauth/WebIDDelegatedAuth), in PHP applications.
+You may test the resulting authentications with [libAuthentication](https://github.com/melvincarvalho/libAuthentication) or its "lite" sister lib [WebIDDelegatedAuth](https://github.com/WebIDauth/WebIDDelegatedAuth), in PHP applications.
 
 # License
 
