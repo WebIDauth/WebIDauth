@@ -1,5 +1,5 @@
-// Copyright 2011 fcns.eu
-// Author: Andrei Sambra - andrei@fcns.eu
+Copyright 2012 fcns.eu
+Author: Andrei Sambra - andrei@fcns.eu
 
 
 # What is WebIDauth? 
@@ -16,13 +16,13 @@ Right now, WebIDauth supports the following functionalities:
 
 # Demo
 
-One may check the demo available at https://my-profile.eu/ for instance (which uses [libAuthentication](https://github.com/melvincarvalho/libAuthentication) to consume WebID and which relies on http://auth.my-profile.eu/, the Identification Provider running WebIDauth.
+One may check the demo available at https://my-profile.eu/ for instance (which uses [WebIDDelegatedAuth](https://github.com/WebIDauth/WebIDDelegatedAuth) to consume WebID and which relies on http://auth.my-profile.eu/, the Identification Provider running WebIDauth.
 
 # How it works
 
 To take an example, the web application at http://sp.example.com/ (which could be called Service Provider or SP) could have a "Login" link on their main page to allow users to authenticate using their webids (check http://auth.my-profile.eu/ for an example of such a demo SP).  This link points to a server which is running WebIDauth, let's say https://idp.example.com/, and which we will call IdP (Identification Provider) from now on (check https://auth.fcns.eu/ for a demo of such an IdP). A typical link would look something like this:
 
-`https://idp.example.com/auth/index.php?authreqissuer=https://sp.example.com/index.php`
+`https://auth.my-profile.eu/auth/index.php?authreqissuer=https://sp.example.com/index.php`
 
 
 What happens next is the IdP will demand an SSL certificate from the user's browser. From the certificate it will extract the webid URI, then after fetching the FOAF profile located at that specific URI it will attempt to match the public key of the certificate with the data found in the FOAF profile. Of course, additional verification steps take place during this process.
@@ -55,7 +55,7 @@ Where $code can be either one of:
 
 PHP, OpenSSL, Apache's mod_ssl
 
-It currently uses graphite (http://graphite.ecs.soton.ac.uk/) and ARC2 (https://github.com/semsol/arc2/) PHP libraries for RDF parsing.
+It currently uses Graphite (http://graphite.ecs.soton.ac.uk/) and ARC2 (https://github.com/semsol/arc2/) PHP libraries for RDF parsing.
 
 # Install
 
@@ -66,11 +66,11 @@ It currently uses graphite (http://graphite.ecs.soton.ac.uk/) and ARC2 (https://
 5. Save everything and start authenticating users by having them click a link similar to this one:
 https:///index.php?authreqissuer=
 
-You may test the resulting authentications with [libAuthentication](https://github.com/melvincarvalho/libAuthentication) or its more compact "forked" sister lib [WebIDDelegatedAuth](https://github.com/WebIDauth/WebIDDelegatedAuth), in PHP applications.
+You may test the resulting authentications with [libAuthentication](https://github.com/melvincarvalho/libAuthentication) or its more compact "lite" sister lib [WebIDDelegatedAuth](https://github.com/WebIDauth/WebIDDelegatedAuth), in PHP applications.
 
 # License
 
-GNU Affero General Public License V3
+MIT License
 
 # TODO
 

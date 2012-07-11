@@ -11,8 +11,8 @@
 	 * Usage: 
 	 *		$log = new KLogger ( "log.txt" , KLogger::INFO );
 	 *		$log->LogInfo("Returned a million search results");	//Prints to the log file
-	 *		$log->LogFATAL("Oh dear.");				//Prints to the log file
-	 *		$log->LogDebug("x = 5");					//Prints nothing due to priority setting
+	 *		$log->LogFATAL("Oh dear."); //Prints to the log file
+	 *		$log->LogDebug("x = 5");    //Prints nothing due to priority setting
 	*/
 	
 	class KLogger
