@@ -39,8 +39,6 @@ require_once('logger.php');
 // log requests (for debugging purposes)
 $log = new KLogger( "logfile.log" , KLogger::DEBUG );
 
-// set to true if we act as IDP (otherwise set to false)
-$idp = true;
 // private key required if we act as IDP (sign redirected request)
 $key_path = "/var/ssl/server.key";
 
