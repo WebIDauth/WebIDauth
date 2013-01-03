@@ -327,6 +327,7 @@ class WebIDauth {
         $match_id = array();
 
         // try to find a match for each webid URI in the certificate
+        $i = 0;
         while ($i < sizeof($this->webid)) {
             $webid = $this->webid[$i];
 
