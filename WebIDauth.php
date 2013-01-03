@@ -447,7 +447,7 @@ class WebIDauth {
         // load private key
         if ($key_path) {
             // check if we can open location and then read key
-            $fp = fopen($key_path, "r") or die("[Runtime Error] Cannot open privte key file!");
+            $fp = fopen($key_path, "r") or die("[Runtime Error] Cannot open private key file!");
             $key = fread($fp, 8192);
             fclose($fp);
         } else {
