@@ -56,11 +56,8 @@ class WebIDauth {
     private $claim_id   = null;     // the webid for which we have a match
     private $cert_txt   = null;     // textual representation of the certificate
     private $issuer     = null;     // issuer uri
-    private $tmp        = null;     // location to store temporary files needed by openssl 
     private $code       = null;     // will hold error codes
     private $verified   = null;     // TLS client private key verification
-
-    private $privKey = null; // private key used to sign the data used for the redirection (in case we act as an LDP)
 
     const parseError = "Cannot parse WebID";
 
@@ -83,15 +80,17 @@ class WebIDauth {
      *
      * @return boolean
      */
-    public function __construct($log,
-                                $certificate = null,
-                                $issuer = null,
-                                $tmp = null,
-                                $verified = null,
-                                $privKey = null,
-                                $protocol = null
-                                )
+    public function __construct($log)
     {
+        // client's browser certificate (in PEM format)
+        $this->cert_pem = $_SERVER['SSL_CLIENT_CERT'];
+
+        // if the client certificate's public key matches his private key
+        $this->verified = $_SERVER['SSL_CLIENT_VERIFY'];
+
+        // Service Provider (source of request)
+        $this->issuer = $_GET['authreqissuer'];
+
         // set log object
         $this->log = $log;
     
@@ -99,39 +98,31 @@ class WebIDauth {
         $this->ts = date("Y-m-dTH:i:sP", time());
     
         // set whether the TLS handshake was successful or not
-        $this->verified = $verified;
+        $this->verified = $_SERVER['SSL_CLIENT_VERIFY'];
 
         // check first if we can write in the temp dir
-        if ($tmp)
-        {
-            $this->tmp = $tmp;
+        $tmp = sys_get_temp_dir();
+        if ($tmp) {
             // test if we can write to this dir
-            $tmpfile = $this->tmp . "/CRT" . md5(time().rand());
+            $tmpfile = $tmp . "/CRT" . md5(time().rand());
             $handle = fopen($tmpfile, "w") or die("[Runtime Error] Cannot write file to temporary dir (" . $tmpfile . ")!");
       	    fclose($handle);
       	    unlink($tmpfile);
-        }
-        else
-        {
+        } else {
             $this->err[] = "[Runtime Error] You have to provide a location to store temporary files!";
         }        
         
         // check if we have openssl installed 
         $command = "openssl version";
         $output = shell_exec($command);
-        if (preg_match("/command not found/", $output) == 1)
-        {
+        if (preg_match("/command not found/", $output) == 1) {
             $this->err[] = "[Runtime Error] OpenSSL may not be installed on your host!";
         }
         
         // process certificate contents 
-        if ($certificate)
-        {
-            // set the certificate in pem format
-            $this->cert_pem = $certificate;
-
+        if ($this->cert_pem) {
             // get the modulus from the browser certificate (ugly hack)
-            $tmpCRTname = $this->tmp . "/CRT" . md5(time().rand());
+            $tmpCRTname = $tmp . "/CRT" . md5(time().rand());
             // write the certificate into the temporary file
             $handle = fopen($tmpCRTname, "w") or die("[Runtime Error] Cannot open temporary file to store the client's certificate!");
             fwrite($handle, $this->cert_pem);
@@ -150,8 +141,7 @@ class WebIDauth {
             // create a php array with the contents of the certificate
             $this->cert = openssl_x509_parse(openssl_x509_read($this->cert_pem));
 
-            if ( ! $this->cert)
-            {
+            if ( ! $this->cert) {
                 $this->err[] = WebIDauth::nocert;
                 $this->code = "nocert";
                 $this->data = $this->retErr($this->code);
@@ -161,8 +151,7 @@ class WebIDauth {
             $alt = explode(', ', $this->cert['extensions']['subjectAltName']);
             // find the webid URI
             foreach ($alt as $val) {
-                if (strstr($val, 'URI:'))
-                {
+                if (strstr($val, 'URI:')) {
                     $webid = explode('URI:', $val);
                     $this->webid[] = $webid[1];
                 }
@@ -170,37 +159,16 @@ class WebIDauth {
                                 
             // delete the temporary certificate file
             unlink($tmpCRTname);
-        }
-        else
-        {
+        } else {
             $this->err[] = "[Client Error] You have to provide a certificate!";
         }
 
-        // process issuer
-        if ($issuer)
-            $this->issuer = $issuer;
-             
-        // load private key
-        if ($privKey)
-        {
-            // check if we can open location and then read key
-            $fp = fopen($privKey, "r") or die("[Runtime Error] Cannot open privte key file!");
-            $this->privKey = fread($fp, 8192);
-            fclose($fp);
-        }
-        else
-        {
-            $this->err[] = "[Runtime Error] You have to provide the location of the private key!";
-        }
-		
+        
         // check if everything is good
-        if (sizeof($this->err))
-        {
+        if (sizeof($this->err)) {
             $this->getErr();
             exit;
-        }
-        else
-        {
+        } else {
             return true;
         }
     }
@@ -249,14 +217,11 @@ class WebIDauth {
 		$ret = "<p>&nbsp;</p>\n";
         $ret .= "Your certificate contains the following WebIDs:<br/>\n";
         $ret .= "<ul>\n";
-        if (sizeof($this->webid))
-        {
+        if (sizeof($this->webid)) {
             foreach ($this->webid as $webid)
                 $ret .= "<li>" . $webid . "</li>\n";
             $ret .= "</ul><br/>\n";
-        }
-        else
-        {
+        } else {
             $ret .= "<font color=\"red\">" . WebIDauth::noURI . "!</font><br/></br>\n";
         }
 
@@ -274,8 +239,7 @@ class WebIDauth {
         $ret .= "  <li>" . urldecode($this->data) . "</li>\n";
         $ret .= "</ul><br/>\n";
 
-        if (sizeof($this->webid) > 1)
-        {        
+        if (sizeof($this->webid) > 1) {        
             $ret .= "<font color=\"orange\">WARNING:</font> Your modulus has more than one relation to a hexadecimal string. ";
             $ret .= "Unless both of those strings map to the same number, your identification experience will vary across clients.<br/><br/>\n";
         }
@@ -284,8 +248,7 @@ class WebIDauth {
             $ret .= "<font color=\"orange\">WARNING:</font> your modulus is a blank node. The newer specification requires this to be a literal.<br/><br/>\n";
         
         // print errors if any
-        if (sizeof($this->err))
-        {
+        if (sizeof($this->err)) {
             $ret .= "Error code:<br/>\n";
             $ret .= "<ul>\n";
             $ret .= "  <li><font color=\"red\">" . $this->code . "</font> " . $this->getErr() . "</li>\n";
@@ -326,13 +289,10 @@ class WebIDauth {
         $this->log->LogInfo("[" . $host . "] " . "* Checking ownership of certificate (public key matches private key)...");
         
         // verify client certificate using TLS
-        if (($this->verified == 'SUCCESS') || ($this->verified == 'GENEROUS'))
-        {
+        if (($this->verified == 'SUCCESS') || ($this->verified == 'GENEROUS')) {
             $info .= "<font color=\"green\">PASSED</font> <small>(Reason: " . $this->verified . ")</small><br/>\n";
             $this->log->LogInfo("[" . $host . "] " . "  PASSED -> Reason: " . $this->verified . "");
-        }
-        else
-        {
+        } else {
             $info .= "<font color=\"red\"></font> <small>(Reason: " . $this->verified . ")</small><br/>\n";
             $this->log->LogInfo("[" . $host . "] " . "  FAILED -> Reason: " . $this->verified . "");
             
@@ -346,8 +306,7 @@ class WebIDauth {
         $this->log->LogInfo("[" . $host . "] " . "* Checking if certificate contains URIs in the subjectAltName field...");
         
         // check if we have URIs
-        if (!sizeof($this->webid))
-        {
+        if (!sizeof($this->webid)) {
             $info .= "<font color=\"red\">FAILED</font><br/>\n";
             $info .= "<font color=\"red\">&nbsp;&nbsp;&nbsp;<small>(Reason: " . WebIDauth::noURI . "!)</small></font><br/>\n";
             $this->log->LogInfo("[" . $host . "] " . "  FAILED -> Reason: " . WebIDauth::noURI . "!)");
@@ -356,9 +315,7 @@ class WebIDauth {
             $this->code = "noURI";
             $this->data = $this->retErr($this->code);
             return false;
-        }
-        else
-        {
+        } else {
             // list total number of webids in the certificate
             $info .= "<font color=\"green\">PASSED</font><br/>\n";
             $info .= "<br/> * Found " . sizeof($this->webid) . " URIs in the certificate (a maximum of 3 will be tested).<br/>\n";
@@ -368,16 +325,9 @@ class WebIDauth {
         // default = no match
         $match = false;
         $match_id = array();
+
         // try to find a match for each webid URI in the certificate
-        // maximum of 3 URIs per certificate - to prevent DoS
-        $i = 0;
-        if (sizeof($this->webid) >= 3)
-            $max = 3;
-        else
-            $max = sizeof($this->webid);
-            
-        while ($i < $max)
-        {
+        while ($i < sizeof($this->webid)) {
             $webid = $this->webid[$i];
 
             $curr = $i + 1;
@@ -420,8 +370,7 @@ class WebIDauth {
                 $info .= "Testing modulus...\n";
     
                 // check if the two modulus values match
-                if ($hex == $this->modulus)
-                {
+                if ($hex == $this->modulus) {
                     $info .= "<font color=\"green\"> PASSED</font><br/>\n";
                     $info .= "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
                     $info .= "WebID=" . substr($hex, 0, 15) . "......." . substr($hex, strlen($hex) - 15, 15) . "<br/>\n";
@@ -437,9 +386,7 @@ class WebIDauth {
                     $this->is_bnode = $bnode;
                     // we got a match -> exit loop
                     break;
-                }
-                else
-                {
+                } else {
                     $info .= "<font color=\"red\">              - FAILED</font><br/>\n";
                     $info .= "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
                     $info .= "WebID=" . substr($hex, 0, 15) . "......." . substr($hex, strlen($hex) - 15, 15) . "<br/>\n";
@@ -456,8 +403,7 @@ class WebIDauth {
             } // end foreach($cert)
             
             // exit while loop if we have a match
-            if ($match)
-            {
+            if ($match) {
                 $info .= "<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>Match found, ignoring futher tests!</b><br/>\n";
                 $this->log->LogInfo("[" . $host . "] " . "              Match found, ignoring futher tests!");
                 break;           
@@ -467,8 +413,7 @@ class WebIDauth {
         } // end while()
 
         // we had no match, return false          
-        if ( ! $match)
-        {
+        if ( ! $match) {
             $info .= "<br/><br/><font color=\"red\"> * Final conclusion: " . WebIDauth::noVerifiedWebId . "</font><br/>\n";
             $this->log->LogInfo("[" . $host . "] " . "* Final conclusion: " . WebIDauth::noVerifiedWebId);
             
@@ -496,10 +441,20 @@ class WebIDauth {
      * Redirect user to the Service Provider's page, then exit.
      * The header location is signed with the private key of the IdP 
      */
-    public function redirect()
+    public function redirect($key_path)
     {
+        // load private key
+        if ($key_path) {
+            // check if we can open location and then read key
+            $fp = fopen($key_path, "r") or die("[Runtime Error] Cannot open privte key file!");
+            $key = fread($fp, 8192);
+            fclose($fp);
+        } else {
+            exit("[Runtime Error] You have to provide the location of the private key when running in IDP mode!");
+        }
+		
         // get private key object
-        $pkey = openssl_get_privatekey($this->privKey);
+        $pkey = openssl_get_privatekey($key);
 
         // sign data
         openssl_sign($this->data, $signature, $pkey);
@@ -514,4 +469,3 @@ class WebIDauth {
 
 } // end class
 
-?>

@@ -33,35 +33,21 @@
 
 require_once('WebIDauth.php');
 require_once('logger.php');
+
 /* Configuration variables (you can modify these) */
 
 // log requests (for debugging purposes)
 $log = new KLogger( "logfile.log" , KLogger::DEBUG );
 
-// where to store temporary files
-// (by default it gets the tmp directory)
-$tmpDir = sys_get_temp_dir();
-
-// private key belonging to server's SSL certificate
-$server_key = "/var/ssl/server.key";
+// set to true if we act as IDP (otherwise set to false)
+$idp = true;
+// private key required if we act as IDP (sign redirected request)
+$key_path = "/var/ssl/server.key";
 
 /* ------ DO NOT MODIFY BELOW THIS LINE ------   */
 
-
-// SSL protocol
-$protocol = $_SERVER["SSL_PROTOCOL"];
-
-// client's browser certificate (in PEM format)
-$client_cert = $_SERVER['SSL_CLIENT_CERT'];
-
-// if the client certificate's public key matches his private key
-$verified = $_SERVER['SSL_CLIENT_VERIFY'];
-
-// Service Provider (source of request)
-$issuer = $_GET['authreqissuer'];
-
 // instantiate the WebIDauth class
-$auth = new WebIDauth($log, $client_cert, $issuer, $tmpDir, $verified, $server_key, $protocol);
+$auth = new WebIDauth($log);
 
 
 // do the magic stuff :-)
@@ -80,7 +66,7 @@ if ($auth) {
         $log->LogInfo("[AUTHENTICATING] From: " . $_SERVER["HTTP_HOST"] . " => " . $issuer);
         if (strlen($issuer) > 0) {
 			$auth->processReq(false, $_SERVER["HTTP_HOST"]);
-      	    $auth->redirect();
+      	    $auth->redirect($key_path);
     	} else {
             // display how to proceed 
     	    echo "<font color=\"red\">You have not provided the Service Provider's URI!</font><br/>\n";
