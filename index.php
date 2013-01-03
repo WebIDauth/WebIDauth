@@ -62,7 +62,7 @@ if ($auth) {
     } else {
         // log who is accessing the service (might be needed later for debugging)
         $log->LogInfo("[AUTHENTICATING] From: " . $_SERVER["HTTP_HOST"] . " => " . $issuer);
-        if (strlen($issuer) > 0) {
+        if (strlen($_GET['authreqissuer']) > 0) {
 			$auth->processReq(false, $_SERVER["HTTP_HOST"]);
       	    $auth->redirect($key_path);
     	} else {
