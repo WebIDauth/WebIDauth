@@ -60,7 +60,7 @@ class WebIDauth {
     private $code       = null;     // will hold error codes
     private $verified   = null;     // TLS client private key verification
 
-    private $privKey = null; // private key of the IdP's SSL certificate (this server)
+    private $privKey = null; // private key used to sign the data used for the redirection (in case we act as an LDP)
 
     const parseError = "Cannot parse WebID";
 
@@ -95,12 +95,6 @@ class WebIDauth {
         // set log object
         $this->log = $log;
     
-        // check for desired protocol (TLSv1 at least)
-        if ($protocol != 'TLSv1') {
-            $this->err[] = "[SSL Error] TLSv1 required. (found ". $protocol . ")";
-            $this->log->LogInfo("[" . $host . "] " . "* TLSv1 required - found ". $protocol . "..."); 
-        }
-
         // set timestamp in XML format
         $this->ts = date("Y-m-dTH:i:sP", time());
     
@@ -190,13 +184,13 @@ class WebIDauth {
         if ($privKey)
         {
             // check if we can open location and then read key
-            $fp = fopen($privKey, "r") or die("[Runtime Error] Cannot open privte key file for the server's SSL certificate!");
+            $fp = fopen($privKey, "r") or die("[Runtime Error] Cannot open privte key file!");
             $this->privKey = fread($fp, 8192);
             fclose($fp);
         }
         else
         {
-            $this->err[] = "[Runtime Error] You have to provide the location of the server SSL certificate's private key!";
+            $this->err[] = "[Runtime Error] You have to provide the location of the private key!";
         }
 		
         // check if everything is good
